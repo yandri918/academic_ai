@@ -1,0 +1,245 @@
+{
+  "name": "AcademAI — Academic Article Generator (Gemini Edition)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "academ-ai",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n1_webhook",
+      "name": "🚀 Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "academ-ai-main"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || $json;\nconst sessionId = body.sessionId || `academ_${Date.now()}_${Math.random().toString(36).substr(2,8)}`;\nconst action = body.action || 'chat';\nconst mode = body.mode || 'drafting';\nconst discipline = body.discipline || 'general_academic';\nconst outputFormat = body.outputFormat || 'markdown';\nconst citationFormat = body.citationFormat || 'APA7';\nconst language = body.language || 'indonesia';\n\nreturn {\n  sessionId, action, mode, discipline,\n  outputFormat, citationFormat, language,\n  userMessage: body.message || body.query || '',\n  targetSection: body.section || null,\n  researchTopic: body.topic || null,\n  journalCount: body.options?.journalCount || 10,\n  yearFilter: body.options?.yearFilter || '2019-2024',\n  runCitationValidator: body.options?.runCitationValidator !== false,\n  hasUploadedData: body.hasUploadedData || false,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "n2_parser",
+      "name": "📋 Parse & Validate Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "generate_full", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "generate_full"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "validate_citations", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "validate_citations"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "upload", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "upload"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "export", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "export"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "reset", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "reset"
+            }
+          ]
+        },
+        "fallbackOutput": "extra"
+      },
+      "id": "n3_router",
+      "name": "🔀 Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = $json.mode || 'drafting';\nconst discipline = $json.discipline || 'general';\nconst language = $json.language || 'indonesia';\nconst citationFormat = $json.citationFormat || 'APA7';\n\nconst modePrompts = {\n  drafting: `Tulis konten akademik baru yang lengkap dan terstruktur. Gunakan tools Semantic Scholar dan DuckDuckGo untuk mencari referensi. Sertakan sitasi (Nama, Tahun) pada setiap klaim faktual. Format output dalam Markdown dengan heading yang jelas.`,\n  editing: `Review dan perbaiki tulisan yang diberikan user. Identifikasi: (1) kalimat yang tidak jelas, (2) inkonsistensi terminologi, (3) argumen yang lemah, (4) sitasi yang kurang/salah. Format output: MASALAH | VERSI ASLI | VERSI REVISI | ALASAN.`,\n  paraphrasing: `Parafrase teks yang diberikan menggunakan bahasa akademik Indonesia yang berbeda dari aslinya. Pertahankan makna, tambahkan sitasi yang tepat. Estimasikan tingkat kemiripan dengan aslinya (tinggi/sedang/rendah).`,\n  SLR: `Lakukan Systematic Literature Review. Gunakan Semantic Scholar secara intensif (cari 15+ jurnal). Buat: (1) Tabel penelitian terdahulu dengan kolom: No, Peneliti/Tahun, Judul, Metode, Variabel, Hasil Utama, Relevansi. (2) Sintesis naratif per tema. (3) Research gap.`,\n  proposal: `Buat proposal penelitian lengkap dengan struktur: Bab I (Latar Belakang, Rumusan Masalah, Tujuan, Manfaat), Bab II (Tinjauan Pustaka singkat, Kerangka Teori, Hipotesis), Bab III (Rencana Metode), Daftar Pustaka sementara.`,\n  abstract: `Buat abstrak akademik dalam DUA bahasa: (1) ABSTRAK INDONESIA (150-200 kata): latar belakang singkat, tujuan, metode, hasil utama, kesimpulan. (2) ABSTRACT ENGLISH (150-200 words): background, objective, method, results, conclusion. Tambahkan KATA KUNCI (3-6) dan KEYWORDS (3-6).`,\n  statistics: `Interpretasikan hasil statistik yang diberikan untuk konteks penelitian akademik. Jelaskan: statistik deskriptif, uji asumsi klasik, hasil analisis utama (koefisien, signifikansi p-value), pengujian hipotesis (diterima/ditolak), dan kaitkan dengan teori dan literatur terkait. Gunakan bahasa yang mudah dipahami.`\n};\n\nconst modeTemp = {\n  drafting: 0.3, editing: 0.2, paraphrasing: 0.7,\n  SLR: 0.3, proposal: 0.3, abstract: 0.3, statistics: 0.2\n};\n\nreturn {\n  ...$json,\n  modePrompt: modePrompts[mode] || modePrompts.drafting,\n  temperature: modeTemp[mode] || 0.3,\n  modeLabel: mode.toUpperCase()\n};"
+      },
+      "id": "n4_mode_selector",
+      "name": "⚙️ Mode Selector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 180]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const topic = $json.researchTopic || $json.userMessage;\nconst discipline = $json.discipline || 'general';\nconst journalCount = $json.journalCount || 10;\nconst yearFilter = $json.yearFilter || '2019-2024';\nconst hasData = $json.hasUploadedData || false;\n\nconst sections = [\n  { id: 'research_phase', label: '🔍 Research Phase', mode: 'drafting',\n    prompt: `Cari ${journalCount} jurnal relevan tentang: \"${topic}\" dari Semantic Scholar (bahasa Inggris, ${yearFilter}). Juga cari data statistik lokal via DuckDuckGo. Simpan semua referensi untuk digunakan di seluruh bab.` },\n  { id: 'abstrak', label: '📄 Abstrak', mode: 'abstract',\n    prompt: `Buat abstrak Indonesia & Inggris (150-200 kata) untuk penelitian: \"${topic}\". Gunakan referensi dari research phase.` },\n  { id: 'bab1', label: '📖 BAB I — Pendahuluan', mode: 'drafting',\n    prompt: `Tulis BAB I Pendahuluan lengkap untuk: \"${topic}\". Sertakan: 1.1 Latar Belakang (800+ kata dengan data terkini), 1.2 Rumusan Masalah, 1.3 Tujuan Penelitian, 1.4 Manfaat Penelitian.` },\n  { id: 'bab2', label: '📚 BAB II — Tinjauan Pustaka', mode: 'SLR',\n    prompt: `Tulis BAB II Tinjauan Pustaka untuk: \"${topic}\". Sertakan: 2.1 Landasan Teori (TAM, Porter, RBV jika relevan), 2.2 Penelitian Terdahulu (tabel 10-15 jurnal), 2.3 Kerangka Pemikiran, 2.4 Hipotesis.` },\n  { id: 'bab3', label: '⚙️ BAB III — Metode Penelitian', mode: 'drafting',\n    prompt: `Tulis BAB III Metode Penelitian untuk: \"${topic}\". Sertakan: jenis penelitian, lokasi & waktu, populasi & sampel (Slovin), teknik pengumpulan data, definisi operasional variabel (tabel), teknik analisis (regresi).` },\n  { id: 'bab4', label: '📊 BAB IV — Hasil & Pembahasan', mode: hasData ? 'statistics' : 'drafting',\n    prompt: hasData ? `Interpretasikan data yang diupload dan tulis BAB IV untuk: \"${topic}\".` : `Tulis template BAB IV untuk \"${topic}\" dengan contoh hasil hipotetis realistis. Tandai bagian yang perlu diganti dengan [DATA REAL].` },\n  { id: 'bab5', label: '🏁 BAB V — Penutup', mode: 'drafting',\n    prompt: `Tulis BAB V Kesimpulan & Saran berdasarkan seluruh pembahasan untuk: \"${topic}\". Sertakan keterbatasan penelitian & saran penelitian berikutnya.` },\n  { id: 'daftar_pustaka', label: '📑 Daftar Pustaka', mode: 'drafting',\n    prompt: `Buat Daftar Pustaka lengkap format APA 7th Edition dari semua referensi yang digunakan. Urutkan alfabetis.` }\n];\n\nreturn {\n  ...$json,\n  sections,\n  totalSections: sections.length,\n  currentIndex: 0,\n  completedSections: [],\n  startedAt: new Date().toISOString()\n};"
+      },
+      "id": "n5_auto_gen",
+      "name": "🤖 Auto Section Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Citation Validator\nconst content = $json.content || $json.userMessage || '';\nconst API_BASE = 'https://api.semanticscholar.org/graph/v1';\nconst API_KEY = $env.SEMANTIC_SCHOLAR_API_KEY || '';\nconst headers = API_KEY ? { 'x-api-key': API_KEY } : {};\n\n// Extract APA citations: (Nama, Tahun) atau (Nama et al., Tahun)\nconst apaPattern = /\\(([A-Z][a-zA-Z\\u00C0-\\u024F]+(?:(?:\\s+&\\s+|\\s+et\\s+al\\.)?(?:\\s*[A-Z][a-zA-Z]+)*)?),?\\s*(\\d{4})\\)/g;\nconst doiPattern = /(?:https?:\\/\\/doi\\.org\\/|doi:\\s*)(10\\.\\d{4,}\\/\\S+)/gi;\n\nconst citations = [];\nlet m;\n\nwhile ((m = apaPattern.exec(content)) !== null) {\n  citations.push({ type: 'APA', author: m[1].trim(), year: m[2], raw: m[0] });\n}\nwhile ((m = doiPattern.exec(content)) !== null) {\n  citations.push({ type: 'DOI', doi: m[1], raw: m[0] });\n}\n\nif (citations.length === 0) {\n  return { validationReport: '⚠️ Tidak ditemukan sitasi dalam format APA atau DOI pada teks yang diberikan.', summary: { total: 0, valid: 0, partial: 0, invalid: 0 }, allValid: true };\n}\n\nconst results = [];\nfor (const cite of citations.slice(0, 20)) {\n  let status = 'UNKNOWN';\n  let found = null;\n  let suggestion = null;\n  try {\n    if (cite.type === 'DOI') {\n      const r = await fetch(`${API_BASE}/paper/DOI:${cite.doi}?fields=title,authors,year,journal`, { headers });\n      if (r.ok) { found = await r.json(); status = 'VALID'; }\n      else { status = 'INVALID'; suggestion = 'DOI tidak ditemukan. Cek kembali DOI.'; }\n    } else {\n      const q = encodeURIComponent(`${cite.author} ${cite.year}`);\n      const r = await fetch(`${API_BASE}/paper/search?query=${q}&fields=title,authors,year,journal&limit=3`, { headers });\n      if (r.ok) {\n        const data = await r.json();\n        const papers = data.data || [];\n        const yearMatch = papers.filter(p => String(p.year) === String(cite.year));\n        if (yearMatch.length > 0) { found = yearMatch[0]; status = 'VALID'; }\n        else if (papers.length > 0) { found = papers[0]; status = 'PARTIAL'; suggestion = `Tahun berbeda: ditemukan ${papers[0].year}, dikutip ${cite.year}.`; }\n        else { status = 'INVALID'; suggestion = 'Tidak ditemukan di Semantic Scholar.'; }\n      }\n    }\n  } catch(e) { status = 'ERROR'; suggestion = e.message; }\n  results.push({ raw: cite.raw, type: cite.type, status, foundTitle: found?.title, foundYear: found?.year, foundJournal: found?.journal?.name, suggestion });\n}\n\nconst icons = { VALID:'✅', PARTIAL:'⚠️', INVALID:'❌', ERROR:'🔴', UNKNOWN:'❓' };\nconst report = results.map(r => {\n  let line = `${icons[r.status]} ${r.raw} → ${r.status}`;\n  if (r.foundTitle) line += `\\n   📄 \"${r.foundTitle}\" (${r.foundYear}) — ${r.foundJournal || 'jurnal tidak diketahui'}`;\n  if (r.suggestion) line += `\\n   💬 ${r.suggestion}`;\n  return line;\n}).join('\\n\\n');\n\nconst valid = results.filter(r=>r.status==='VALID').length;\nconst partial = results.filter(r=>r.status==='PARTIAL').length;\nconst invalid = results.filter(r=>r.status==='INVALID').length;\n\nreturn {\n  validationReport: `📋 CITATION VALIDATION REPORT\\n${'='.repeat(40)}\\n${report}\\n\\n📊 Ringkasan: ${results.length} sitasi | ✅ ${valid} valid | ⚠️ ${partial} perlu cek | ❌ ${invalid} tidak valid`,\n  summary: { total: results.length, valid, partial, invalid },\n  allValid: invalid === 0\n};"
+      },
+      "id": "n6_citation_validator",
+      "name": "🔍 Citation Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 420]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('📋 Parse & Validate Request').item.json.sessionId }}",
+        "contextWindowLength": 30
+      },
+      "id": "n7_memory",
+      "name": "💾 Session Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1080, 520]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": "={{ $('⚙️ Mode Selector').item?.json?.temperature || 0.3 }}"
+        }
+      },
+      "id": "n8_gemini",
+      "name": "✨ Google Gemini Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1080, 300],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gemini_cred",
+          "name": "Google Gemini API — AcademAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "semantic_scholar_search",
+        "description": "Cari jurnal dan artikel ilmiah peer-reviewed dari Semantic Scholar (200 juta+ paper). GUNAKAN SELALU untuk: referensi akademik, penelitian terdahulu, verifikasi teori. Tulis query dalam bahasa INGGRIS untuk hasil terbaik. Contoh query: 'digital transformation SME Indonesia 2023'",
+        "jsCode": "const query = $fromAI('query', 'Search query in English');\nconst limit = $fromAI('limit', 'Number of results (default 10, max 20)', 'number') || 10;\nconst yearFilter = $fromAI('year_filter', 'Year filter like 2019-2024 (optional)', 'string') || '';\nconst API_KEY = $env.SEMANTIC_SCHOLAR_API_KEY || '';\nconst headers = API_KEY ? { 'x-api-key': API_KEY } : {};\nconst fields = 'title,authors,year,abstract,citationCount,externalIds,journal,fieldsOfStudy';\nlet url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&fields=${fields}&limit=${Math.min(limit, 20)}`;\nif (yearFilter) url += `&year=${yearFilter}`;\ntry {\n  const r = await fetch(url, { headers });\n  if (!r.ok) return `Error: ${r.status} ${r.statusText}`;\n  const data = await r.json();\n  if (!data.data?.length) return `Tidak ditemukan paper untuk: \"${query}\". Coba kata kunci yang lebih umum.`;\n  const papers = data.data.map((p, i) => {\n    const authors = p.authors?.slice(0,3).map(a=>a.name).join(', ') + (p.authors?.length>3?' et al.':'');\n    const doi = p.externalIds?.DOI;\n    const abstract = p.abstract?.substring(0,350) || 'Abstrak tidak tersedia';\n    const apa = doi ? `${authors} (${p.year}). ${p.title}. *${p.journal?.name||''}*. https://doi.org/${doi}` : `${authors} (${p.year}). ${p.title}. *${p.journal?.name||''}*.`;\n    return `[${i+1}] **${p.title}**\\n    Penulis: ${authors} (${p.year})\\n    Jurnal: ${p.journal?.name||'N/A'}\\n    Dikutip: ${p.citationCount||0}x | Bidang: ${p.fieldsOfStudy?.slice(0,2).join(', ')||'N/A'}\\n    DOI: ${doi?`https://doi.org/${doi}`:'Tidak tersedia'}\\n    Abstrak: ${abstract}...\\n    📌 Sitasi APA: ${apa}`;\n  }).join('\\n\\n');\n  return `Ditemukan ${data.data.length} dari ${data.total||'?'} paper untuk \"${query}\":\\n\\n${papers}`;\n} catch(e) { return `Error mencari jurnal: ${e.message}`; }"
+      },
+      "id": "n9_semantic_tool",
+      "name": "📖 Semantic Scholar Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [860, 520]
+    },
+    {
+      "parameters": {
+        "name": "duckduckgo_search",
+        "description": "Cari informasi terkini dari internet. GUNAKAN untuk: data BPS/statistik terbaru, kebijakan pemerintah, laporan Bank Indonesia/OJK/UNESCO, berita ekonomi terkini, data lokal regional. JANGAN gunakan untuk jurnal ilmiah (pakai Semantic Scholar). Query bisa bahasa Indonesia.",
+        "method": "GET",
+        "url": "https://api.duckduckgo.com/",
+        "sendQuery": true,
+        "parametersQuery": {
+          "values": [
+            { "name": "q", "value": "={{ $fromAI('search_query', 'The search query') }}" },
+            { "name": "format", "value": "json" },
+            { "name": "no_html", "value": "1" },
+            { "name": "skip_disambig", "value": "1" }
+          ]
+        }
+      },
+      "id": "n10_ddg_tool",
+      "name": "🦆 DuckDuckGo Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1080, 620]
+    },
+    {
+      "parameters": {
+        "agentType": "toolsAgent",
+        "options": {
+          "maxIterations": 10,
+          "returnIntermediateSteps": false,
+          "systemMessage": "Kamu adalah AcademAI — asisten riset dan penulisan artikel ilmiah berbasis AI untuk mahasiswa, dosen, dan peneliti di Indonesia.\n\nCakupan: SEMUA disiplin ilmu akademik (Ekonomi, Pendidikan, Hukum, Psikologi, Teknik, Kesehatan, Komputer, Sosial, Humaniora, Pertanian, Komunikasi). Scope TERBATAS pada dunia pendidikan dan akademik.\n\nATURAN WAJIB:\n1. Setiap klaim faktual HARUS disertai sitasi (Nama, Tahun) - JANGAN membuat sitasi fiktif\n2. Jika butuh jurnal: gunakan tool semantic_scholar_search\n3. Jika butuh data terkini/lokal: gunakan tool duckduckgo_search\n4. Bahasa Indonesia formal akademik (kecuali diminta English)\n5. Ganti 'saya/kami' dengan 'peneliti' dalam konteks akademik\n6. Parafrase - jangan copy-paste dari sumber\n7. Anti-hallucination: lebih baik bilang tidak tahu daripada mengarang\n8. Format output: Markdown dengan heading jelas\n9. Cantumkan referensi yang digunakan di akhir setiap section\n\nFORMAT SITASI DEFAULT: APA 7th Edition\nContoh: (Santoso et al., 2023) | Full: Santoso, A., & Lee, B. (2023). Judul. Jurnal, 5(2), 10-25. https://doi.org/xxx\n\nSession: {{ $('📋 Parse & Validate Request').item.json.sessionId }} | Topic: {{ $('📋 Parse & Validate Request').item.json.researchTopic || 'belum ditentukan' }} | Discipline: {{ $('📋 Parse & Validate Request').item.json.discipline }} | Citation: {{ $('📋 Parse & Validate Request').item.json.citationFormat }}\nMODE SAAT INI: {{ $('⚙️ Mode Selector').item?.json?.modeLabel || 'DRAFTING' }}\nINSTRUKSI MODE: {{ $('⚙️ Mode Selector').item?.json?.modePrompt || 'Tulis konten akademik baru yang lengkap.' }}"
+        }
+      },
+      "id": "n11_agent",
+      "name": "🧠 AcademAI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const output = $json.output || $json.text || '';\nconst req = $('📋 Parse & Validate Request').item.json;\nconst date = new Date().toLocaleDateString('id-ID', { year:'numeric', month:'long', day:'numeric' });\nconst header = `---\\nGenerated by: AcademAI (Google Gemini 2.0 Flash)\\nMode: ${req.mode?.toUpperCase() || 'DRAFTING'}\\nSession: ${req.sessionId}\\nBahasa: ${req.language} | Sitasi: ${req.citationFormat}\\nDibuat: ${date}\\n---\\n\\n`;\nconst footer = `\\n\\n---\\n> ⚠️ **Disclaimer AcademAI**: Dokumen ini dibantu AI. Selalu verifikasi fakta, cek sitasi, dan konsultasikan dengan pembimbing Anda sebelum digunakan.`;\nreturn { documentMarkdown: header + output + footer, wordCount: output.split(/\\s+/).length, sessionId: req.sessionId, outputFormat: req.outputFormat, mode: req.mode, timestamp: new Date().toISOString() };"
+      },
+      "id": "n12_assembler",
+      "name": "📝 Document Assembler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const doc = $json;\nreturn {\n  success: true,\n  sessionId: doc.sessionId,\n  mode: doc.mode,\n  document: {\n    content: doc.documentMarkdown,\n    wordCount: doc.wordCount,\n    format: 'markdown',\n    generatedAt: doc.timestamp\n  },\n  message: `✅ Dokumen berhasil dibuat (${doc.wordCount} kata, mode: ${doc.mode})`,\n  nextSteps: [\n    'Gunakan action: validate_citations untuk verifikasi sitasi',\n    'Gunakan action: export dengan outputFormat: pdf untuk ekspor PDF',\n    'Lanjutkan sesi dengan sessionId yang sama untuk bab berikutnya'\n  ],\n  meta: { model: 'gemini-2.0-flash', poweredBy: 'AcademAI v2.0' }\n};"
+      },
+      "id": "n13_response_builder",
+      "name": "📤 Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "X-Powered-By", "value": "AcademAI-v2.0" }
+            ]
+          }
+        }
+      },
+      "id": "n14_response",
+      "name": "✅ Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1960, 300]
+    }
+  ],
+  "connections": {
+    "🚀 Webhook Trigger": { "main": [[{ "node": "📋 Parse & Validate Request", "type": "main", "index": 0 }]] },
+    "📋 Parse & Validate Request": { "main": [[{ "node": "🔀 Action Router", "type": "main", "index": 0 }]] },
+    "🔀 Action Router": {
+      "main": [
+        [{ "node": "🤖 Auto Section Generator", "type": "main", "index": 0 }],
+        [{ "node": "🔍 Citation Validator", "type": "main", "index": 0 }],
+        [{ "node": "📝 Document Assembler", "type": "main", "index": 0 }],
+        [{ "node": "📤 Build Response", "type": "main", "index": 0 }],
+        [{ "node": "📤 Build Response", "type": "main", "index": 0 }],
+        [{ "node": "⚙️ Mode Selector", "type": "main", "index": 0 }]
+      ]
+    },
+    "⚙️ Mode Selector": { "main": [[{ "node": "🧠 AcademAI Agent", "type": "main", "index": 0 }]] },
+    "🤖 Auto Section Generator": { "main": [[{ "node": "🧠 AcademAI Agent", "type": "main", "index": 0 }]] },
+    "🔍 Citation Validator": { "main": [[{ "node": "📤 Build Response", "type": "main", "index": 0 }]] },
+    "💾 Session Memory": { "ai_memory": [[{ "node": "🧠 AcademAI Agent", "type": "ai_memory", "index": 0 }]] },
+    "✨ Google Gemini Model": { "ai_languageModel": [[{ "node": "🧠 AcademAI Agent", "type": "ai_languageModel", "index": 0 }]] },
+    "📖 Semantic Scholar Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 0 }]] },
+    "🦆 DuckDuckGo Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 1 }]] },
+    "🧠 AcademAI Agent": { "main": [[{ "node": "📝 Document Assembler", "type": "main", "index": 0 }]] },
+    "📝 Document Assembler": { "main": [[{ "node": "📤 Build Response", "type": "main", "index": 0 }]] },
+    "📤 Build Response": { "main": [[{ "node": "✅ Send Response", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "tags": ["academic", "ai", "gemini", "research", "education", "v2.0"],
+  "meta": { "instanceId": "academ-ai-gemini" }
+}
