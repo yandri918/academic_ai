@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AcademAI — AI Scientific Article Generator</title>
+  <meta name="description" content="AcademAI: Asisten riset dan penulisan artikel ilmiah berbasis AI untuk mahasiswa, dosen, dan peneliti Indonesia. Powered by Claude + n8n." />
+  <meta name="keywords" content="AI akademik, artikel ilmiah, generator jurnal, skripsi AI, penelitian otomatis" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🎓</text></svg>" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js" defer></script>
+
+  <!-- DOMPurify for safe Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" defer></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Backgrounds ─────────────────────────── -->
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-glow" aria-hidden="true"></div>
+<div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+<div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+
+<!-- ── Header ──────────────────────────────── -->
+<header class="header" role="banner">
+  <div class="header-logo" aria-label="AcademAI">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="14" cy="14" r="13" fill="url(#grad-logo)" opacity="0.15"/>
+      <path d="M14 6L19 12H9L14 6Z" fill="url(#grad-logo)"/>
+      <path d="M9 12H19L19 20H9V12Z" fill="url(#grad-logo)" opacity="0.7"/>
+      <circle cx="14" cy="12" r="2" fill="white" opacity="0.9"/>
+      <defs>
+        <linearGradient id="grad-logo" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#6c63ff"/>
+          <stop offset="100%" stop-color="#00d4aa"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    AcademAI
+  </div>
+  <span class="header-badge">v2.0</span>
+  <div class="header-spacer"></div>
+  <div class="header-status" id="status-indicator" aria-live="polite">
+    <div class="status-dot offline" id="status-dot"></div>
+    <span id="status-text">Menghubungkan…</span>
+  </div>
+</header>
+
+<!-- ── App Layout ───────────────────────────── -->
+<div class="app-layout">
+
+  <!-- ── Tab Navigation ──────────────────── -->
+  <nav class="tab-nav" role="tablist" aria-label="Navigasi fitur">
+    <button class="tab-btn active" id="tab-chat-btn" role="tab" aria-selected="true" aria-controls="tab-chat" onclick="switchTab('chat')">
+      <span class="tab-icon" aria-hidden="true">💬</span>Chat
+    </button>
+    <button class="tab-btn" id="tab-generate-btn" role="tab" aria-selected="false" aria-controls="tab-generate" onclick="switchTab('generate')">
+      <span class="tab-icon" aria-hidden="true">🤖</span>Generate Artikel
+    </button>
+    <button class="tab-btn" id="tab-validator-btn" role="tab" aria-selected="false" aria-controls="tab-validator" onclick="switchTab('validator')">
+      <span class="tab-icon" aria-hidden="true">🔍</span>Validator Sitasi
+    </button>
+  </nav>
+
+  <main class="main-content" role="main">
+
+    <!-- ════════════════════════════════════
+         TAB 1: CHAT
+         ════════════════════════════════════ -->
+    <section id="tab-chat" class="tab-content active" role="tabpanel" aria-labelledby="tab-chat-btn">
+      <div class="chat-layout">
+
+        <!-- Controls Bar -->
+        <div class="chat-controls">
+          <!-- Mode Selector -->
+          <div class="mode-select-wrap" id="mode-wrap">
+            <button class="mode-badge active-mode" id="mode-badge-btn" onclick="toggleModeDropdown()" aria-haspopup="listbox" aria-expanded="false">
+              <span id="mode-icon-display">✍️</span>
+              <span id="mode-label-display">Drafting</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="mode-dropdown hidden" id="mode-dropdown" role="listbox" aria-label="Pilih mode">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Discipline Select -->
+          <select class="form-select" id="chat-discipline" style="width:auto;font-size:0.8rem;padding:6px 32px 6px 12px;" aria-label="Pilih disiplin ilmu">
+            <option value="general_academic">📚 Umum</option>
+            <option value="economics">💰 Ekonomi</option>
+            <option value="education">🎓 Pendidikan</option>
+            <option value="law">⚖️ Hukum</option>
+            <option value="psychology">🧠 Psikologi</option>
+            <option value="engineering">⚙️ Teknik</option>
+            <option value="health">🏥 Kesehatan</option>
+            <option value="computer_science">💻 Komputer</option>
+            <option value="social">👥 Sosial</option>
+            <option value="agriculture">🌾 Pertanian</option>
+          </select>
+
+          <!-- New Session -->
+          <button class="btn btn-ghost btn-sm" onclick="newSession()" title="Mulai sesi baru" aria-label="Mulai sesi baru">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Baru
+          </button>
+
+          <!-- Session ID -->
+          <div class="session-id-display" id="session-id-display" aria-label="Session ID saat ini">
+            Session: <span id="session-id-text">—</span>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-label="Percakapan">
+          <!-- Empty State -->
+          <div class="chat-empty" id="chat-empty">
+            <div class="chat-empty-icon" aria-hidden="true">🎓</div>
+            <h3>Selamat datang di AcademAI</h3>
+            <p>Asisten riset & penulisan artikel ilmiah berbasis AI untuk mahasiswa, dosen, dan peneliti Indonesia.</p>
+            <div class="chat-suggestions" role="group" aria-label="Saran pertanyaan">
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Bantu saya menulis latar belakang penelitian">✍️ Bantu tulis latar belakang penelitian</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Buat tabel penelitian terdahulu">📊 Buat tabel penelitian terdahulu</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Parafrase teks ini untuk menghindari plagiarisme">🔄 Parafrase untuk hindari plagiat</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Buat abstrak Indonesia dan Inggris">📄 Buat abstrak Indonesia & Inggris</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Interpretasikan hasil SPSS saya">📈 Interpretasikan hasil SPSS saya</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+          <div class="chat-input-wrap">
+            <textarea
+              id="chat-input"
+              class="chat-textarea"
+              placeholder="Tulis pesan Anda… (Shift+Enter untuk baris baru)"
+              rows="1"
+              maxlength="8000"
+              aria-label="Pesan untuk AcademAI"
+              onkeydown="handleChatKey(event)"
+              oninput="autoResizeTextarea(this)"
+            ></textarea>
+            <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()" aria-label="Kirim pesan" title="Kirim (Enter)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+              </svg>
+            </button>
+          </div>
+          <p class="chat-footer-hint">AcademAI dapat membuat kesalahan. Selalu verifikasi sitasi & konsultasikan dengan pembimbing Anda.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB 2: GENERATE ARTIKEL
+         ════════════════════════════════════ -->
+    <section id="tab-generate" class="tab-content" role="tabpanel" aria-labelledby="tab-generate-btn">
+      <div class="generate-layout">
+        <h1 class="section-title">Generate Artikel Otomatis</h1>
+        <p class="section-subtitle">Isi detail penelitian → AcademAI otomatis menulis seluruh bab (Abstrak → BAB I–V → Daftar Pustaka)</p>
+
+        <!-- Form Card -->
+        <div class="glass-card generate-card">
+          <div class="generate-card-title">
+            <div class="icon-wrap" aria-hidden="true">📝</div>
+            Detail Penelitian
+          </div>
+
+          <div class="form-grid" style="gap:20px;">
+            <!-- Topic -->
+            <div class="form-group">
+              <label class="form-label" for="gen-topic">Topik / Judul Penelitian *</label>
+              <input
+                type="text" id="gen-topic" class="form-input"
+                placeholder="Cth: Pengaruh Media Sosial terhadap Motivasi Belajar Mahasiswa Generasi Z"
+                aria-required="true"
+              />
+            </div>
+
+            <!-- 2-col row -->
+            <div class="form-grid form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="gen-discipline">Disiplin Ilmu *</label>
+                <select id="gen-discipline" class="form-select" aria-required="true">
+                  <option value="general_academic">📚 Umum / Lintas Disiplin</option>
+                  <option value="economics" selected>💰 Ekonomi & Bisnis</option>
+                  <option value="education">🎓 Pendidikan</option>
+                  <option value="law">⚖️ Hukum</option>
+                  <option value="psychology">🧠 Psikologi</option>
+                  <option value="engineering">⚙️ Teknik & Teknologi</option>
+                  <option value="health">🏥 Kesehatan & Kedokteran</option>
+                  <option value="computer_science">💻 Ilmu Komputer</option>
+                  <option value="social">👥 Ilmu Sosial</option>
+                  <option value="agriculture">🌾 Pertanian</option>
+                  <option value="communication">📡 Komunikasi</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="gen-language">Bahasa Output</label>
+                <select id="gen-language" class="form-select">
+                  <option value="indonesia" selected>🇮🇩 Bahasa Indonesia</option>
+                  <option value="english">🇬🇧 English</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 3-col row -->
+            <div class="form-grid form-grid-3">
+              <div class="form-group">
+                <label class="form-label" for="gen-journal-count">Jumlah Jurnal</label>
+                <select id="gen-journal-count" class="form-select">
+                  <option value="8">8 jurnal</option>
+                  <option value="10" selected>10 jurnal</option>
+                  <option value="15">15 jurnal</option>
+                  <option value="20">20 jurnal</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="gen-year-filter">Filter Tahun</label>
+                <select id="gen-year-filter" class="form-select">
+                  <option value="2020-2025">2020–2025</option>
+                  <option value="2019-2024" selected>2019–2024</option>
+                  <option value="2018-2023">2018–2023</option>
+                  <option value="2015-2025">2015–2025</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="gen-citation-format">Format Sitasi</label>
+                <select id="gen-citation-format" class="form-select">
+                  <option value="APA7" selected>APA 7th Edition</option>
+                  <option value="APA6">APA 6th Edition</option>
+                  <option value="Chicago">Chicago Style</option>
+                  <option value="Vancouver">Vancouver</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Validate Citations checkbox -->
+            <div class="flex items-center gap-2" style="margin-top:4px;">
+              <input type="checkbox" id="gen-validate-citations" checked style="accent-color:var(--c-primary);width:16px;height:16px;" />
+              <label for="gen-validate-citations" style="font-size:0.85rem;color:var(--t-secondary);cursor:pointer;">
+                Validasi sitasi otomatis setelah generate
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="flex items-center gap-3 mb-4">
+          <button class="btn btn-primary btn-lg" id="gen-btn" onclick="generateFull()" aria-label="Mulai generate artikel">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg>
+            Generate Artikel
+          </button>
+          <button class="btn btn-secondary" onclick="resetGenerate()" aria-label="Reset form generate">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset
+          </button>
+          <div class="ml-auto text-sm text-muted" id="gen-status-text"></div>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="progress-steps" id="gen-progress" role="progressbar" aria-label="Progress generate" style="display:none;">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Output Card -->
+        <div class="glass-card output-card" id="gen-output-card">
+          <div class="output-toolbar">
+            <span class="output-toolbar-title" id="output-title">Output Dokumen</span>
+            <button class="btn btn-secondary btn-sm" onclick="copyOutput()" id="copy-btn" style="display:none;" aria-label="Salin konten">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Salin
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="downloadOutput()" id="download-btn" style="display:none;" aria-label="Download dokumen Markdown">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download .md
+            </button>
+          </div>
+          <div class="output-body" id="gen-output-body">
+            <div class="output-placeholder">
+              <div class="output-placeholder-icon" aria-hidden="true">📄</div>
+              <p>Dokumen akan muncul di sini setelah generate selesai</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB 3: VALIDATOR SITASI
+         ════════════════════════════════════ -->
+    <section id="tab-validator" class="tab-content" role="tabpanel" aria-labelledby="tab-validator-btn">
+      <div class="validator-layout">
+        <h1 class="section-title">Validator Sitasi</h1>
+        <p class="section-subtitle">Paste teks berisi sitasi APA/DOI → AcademAI memverifikasi ke Semantic Scholar secara otomatis</p>
+
+        <!-- Input Card -->
+        <div class="glass-card validator-input-card">
+          <div class="form-group" style="margin-bottom:16px;">
+            <label class="form-label" for="validator-input">Teks yang Mengandung Sitasi</label>
+            <textarea
+              id="validator-input" class="form-textarea"
+              placeholder="Cth: Menurut Santoso et al. (2023) digitalisasi UMKM meningkat signifikan. Penelitian oleh Wijaya (2021) juga menunjukkan... (DOI: 10.1234/abc.2023.01)"
+              style="min-height:160px;"
+              aria-label="Teks berisi sitasi yang akan divalidasi"
+            ></textarea>
+            <div class="form-hint">Mendukung format: (Nama, Tahun), (Nama et al., Tahun), dan DOI. Maks 20 sitasi per validasi.</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="btn btn-primary" id="validate-btn" onclick="validateCitations()" aria-label="Mulai validasi sitasi">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Validasi Sekarang
+            </button>
+            <button class="btn btn-ghost" onclick="clearValidator()" aria-label="Hapus input validator">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              Hapus
+            </button>
+            <div class="ml-auto text-sm text-muted" id="validator-status"></div>
+          </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="validator-summary hidden" id="validator-summary" role="region" aria-label="Ringkasan hasil validasi">
+          <div class="summary-stat total">
+            <div class="summary-stat-num" id="stat-total">0</div>
+            <div class="summary-stat-label">Total Sitasi</div>
+          </div>
+          <div class="summary-stat valid">
+            <div class="summary-stat-num" id="stat-valid">0</div>
+            <div class="summary-stat-label">✅ Valid</div>
+          </div>
+          <div class="summary-stat partial">
+            <div class="summary-stat-num" id="stat-partial">0</div>
+            <div class="summary-stat-label">⚠️ Perlu Cek</div>
+          </div>
+          <div class="summary-stat invalid">
+            <div class="summary-stat-num" id="stat-invalid">0</div>
+            <div class="summary-stat-label">❌ Tidak Valid</div>
+          </div>
+        </div>
+
+        <!-- Results List -->
+        <div class="validator-results" id="validator-results" role="list" aria-label="Hasil validasi sitasi">
+          <!-- Rendered by JS -->
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── Toast Container ──────────────────────── -->
+<div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+<!-- User Config (Railway URL, etc.) — Edit config.js -->
+<script src="config.js"></script>
+
+<!-- Main Script -->
+<script src="app.js"></script>
+
+</body>
+</html>

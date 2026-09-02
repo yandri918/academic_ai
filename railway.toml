@@ -1,0 +1,17 @@
+# ============================================
+# AcademAI — Railway Deployment Config
+# Docs: https://docs.railway.app/reference/config-as-code
+# ============================================
+
+[build]
+  # Use the Dockerfile at project root
+  dockerfilePath = "Dockerfile"
+
+[deploy]
+  # Restart if container crashes
+  restartPolicyType = "ON_FAILURE"
+  restartPolicyMaxRetries = 5
+
+  # Mount persistent volume for n8n data (workflows, credentials)
+  # Configure in Railway Dashboard → Service → Volumes
+  # Mount path: /home/node/.n8n
