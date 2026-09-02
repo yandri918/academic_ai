@@ -9,10 +9,8 @@
 
 window.ACADEM_CONFIG = {
   // ── WAJIB DIISI ──────────────────────────────
-  // URL n8n Railway Anda. Contoh:
-  // "https://academ-ai-n8n-production.up.railway.app"
-  // Jangan ada trailing slash (/)
-  N8N_URL: "https://GANTI-DENGAN-URL-RAILWAY-ANDA.up.railway.app",
+  // URL n8n Railway Anda:
+  N8N_URL: "https://academicai-production-c4d6.up.railway.app",
 
   // ── OPSIONAL ─────────────────────────────────
   // Path webhook (biasanya tidak perlu diubah)
