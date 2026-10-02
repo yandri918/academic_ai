@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -13,11 +14,90 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'frontend')));
+
+// ── Persistent Document Memory Storage ───────────
+const DATA_DIR = path.join(__dirname, 'data');
+const MEMORY_FILE = path.join(DATA_DIR, 'memory.json');
+
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function loadMemoryData() {
+  try {
+    if (fs.existsSync(MEMORY_FILE)) {
+      const raw = fs.readFileSync(MEMORY_FILE, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('[Memory] Error membaca memory.json:', e.message);
+  }
+  return {};
+}
+
+function saveMemoryData(data) {
+  try {
+    fs.writeFileSync(MEMORY_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('[Memory] Error menyimpan memory.json:', e.message);
+  }
+}
+
+function getSessionDocuments(sessionId) {
+  const all = loadMemoryData();
+  return all[sessionId] || [];
+}
+
+function saveDocumentToMemory(sessionId, doc) {
+  const all = loadMemoryData();
+  if (!all[sessionId]) all[sessionId] = [];
+
+  const newDoc = {
+    id: doc.id || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    title: doc.title || 'Draf Dokumen Penelitian',
+    type: doc.type || 'draft',
+    content: doc.content || '',
+    wordCount: doc.content ? doc.content.split(/\s+/).filter(Boolean).length : 0,
+    timestamp: new Date().toISOString()
+  };
+
+  const existingIdx = all[sessionId].findIndex(d => d.id === newDoc.id);
+  if (existingIdx >= 0) {
+    all[sessionId][existingIdx] = newDoc;
+  } else {
+    all[sessionId].unshift(newDoc);
+  }
+
+  // Simpan maksimal 15 dokumen per sesi
+  if (all[sessionId].length > 15) {
+    all[sessionId] = all[sessionId].slice(0, 15);
+  }
+
+  saveMemoryData(all);
+  return newDoc;
+}
+
+function deleteDocumentFromMemory(sessionId, docId) {
+  const all = loadMemoryData();
+  if (all[sessionId]) {
+    all[sessionId] = all[sessionId].filter(d => d.id !== docId);
+    saveMemoryData(all);
+    return true;
+  }
+  return false;
+}
+
+function clearSessionMemory(sessionId) {
+  const all = loadMemoryData();
+  delete all[sessionId];
+  saveMemoryData(all);
+  return true;
+}
 
 // Health check endpoint
 app.get('/healthz', (req, res) => {
@@ -25,8 +105,40 @@ app.get('/healthz', (req, res) => {
     status: 'ok',
     server: 'AcademAI Direct Academic Engine',
     discipline: 'S1 PAUD & Academic Research',
+    features: ['memory_context', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator'],
     models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-3.8-flash']
   });
+});
+
+// ── Memory API Endpoints ─────────────────────────
+app.get('/api/memory/:sessionId', (req, res) => {
+  const sessionId = req.params.sessionId;
+  const docs = getSessionDocuments(sessionId);
+  res.json({ success: true, sessionId, count: docs.length, documents: docs });
+});
+
+app.post('/api/memory', (req, res) => {
+  const { sessionId = 'default_session', title, content, type = 'draft', id } = req.body;
+  if (!content || !content.trim()) {
+    return res.status(400).json({ success: false, error: 'Konten dokumen tidak boleh kosong' });
+  }
+  const savedDoc = saveDocumentToMemory(sessionId, { id, title, content, type });
+  const allDocs = getSessionDocuments(sessionId);
+  console.log(`[AcademAI Memory] Dokumen tersimpan ke sesi ${sessionId}: "${savedDoc.title}" (${savedDoc.wordCount} kata)`);
+  res.json({ success: true, document: savedDoc, totalCount: allDocs.length });
+});
+
+app.delete('/api/memory/:sessionId/:id', (req, res) => {
+  const { sessionId, id } = req.params;
+  const deleted = deleteDocumentFromMemory(sessionId, id);
+  const remaining = getSessionDocuments(sessionId);
+  res.json({ success: deleted, remainingCount: remaining.length });
+});
+
+app.delete('/api/memory/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  clearSessionMemory(sessionId);
+  res.json({ success: true, remainingCount: 0 });
 });
 
 // Helper: Query Google Scholar via SerpApi
@@ -43,7 +155,6 @@ async function searchGoogleScholar(query, limit = 8) {
     const data = await response.json();
     const results = (data.organic_results || []).slice(0, limit).map((p, idx) => {
       const pubSummary = p.publication_info?.summary || '';
-      // Extract author surname and year if available
       const yearMatch = pubSummary.match(/\b(20\d{2}|19\d{2})\b/);
       const year = yearMatch ? yearMatch[1] : `${2021 + (idx % 4)}`;
       const firstAuthor = pubSummary.split('-')[0]?.trim().split(',')[0]?.split(' ')[0] || 'Peneliti';
@@ -171,7 +282,7 @@ async function callGemini(systemPrompt, userPrompt) {
 }
 
 // Comprehensive Core Academic System Prompt
-function buildMasterAcademicPrompt(discipline, citationFormat, referencesContext) {
+function buildMasterAcademicPrompt(discipline, citationFormat, extraContext) {
   return `Anda adalah AcademAI — Co-Pilot Riset Akademik dan Penulisan Skripsi Ilmiah S1 Terkemuka di Indonesia, dengan spesialisasi mendalam pada bidang Pendidikan Anak Usia Dini (S1 PAUD) dan Ilmu Pendidikan.
 
 STANDAR ILMIAH & METODOLOGIS UTAMA:
@@ -204,7 +315,7 @@ STANDAR ILMIAH & METODOLOGIS UTAMA:
    - Menggunakan Bahasa Indonesia formal akademik baku sesuai Pedoman Umum Ejaan Bahasa Indonesia (EYD Edisi V / PUEBI).
    - Struktur kalimat objektif, nominalisasi akademik, kalimat pasif impersonal, menghindari kata ganti orang pertama (seperti "saya", "kami", diganti "peneliti").
    - Format sitasi ketat gaya ${citationFormat} (contoh: (Nurjanah, 2022) atau (Sujiono & Sujiono, 2021)).
-   - Setiap bab dan sub-bab ditulis dengan penomoran terstruktur (1.1, 1.2, 2.1, dst.) dan penyajian tabel Markdown yang rapi.${referencesContext}`;
+   - Setiap bab dan sub-bab ditulis dengan penomoran terstruktur (1.1, 1.2, 2.1, dst.) dan penyajian tabel Markdown yang rapi.${extraContext}`;
 }
 
 // Handler for Citation Validator
@@ -217,7 +328,6 @@ async function handleCitationValidator(req, res) {
 
     console.log(`[AcademAI Validator] Memvalidasi sitasi pada teks sepanjang ${content.length} karakter...`);
 
-    // Regex to detect in-text citations: (Author, Year) or (Author et al., Year) or Author (Year)
     const citationRegex = /(?:\(?([A-Z][a-zA-ZÀ-ÿ\s\-\&]+?(?:\set\sal\.)?),\s*([12]\d{3}[a-z]?)\)?)|(?:([A-Z][a-zA-ZÀ-ÿ\s\-\&]+?(?:\set\sal\.)?)\s*\(([12]\d{3}[a-z]?)\))/g;
     const doiRegex = /\b10\.\d{4,9}\/[-._;()/:A-Za-z0-9]+/g;
 
@@ -241,7 +351,6 @@ async function handleCitationValidator(req, res) {
     }
 
     if (matches.length === 0) {
-      // Default to scanning potential references if no explicit brackets
       matches.push({
         type: 'citation',
         author: 'Format Umum',
@@ -266,7 +375,6 @@ async function handleCitationValidator(req, res) {
         const yearInt = parseInt(item.year, 10);
         const currentYear = new Date().getFullYear();
 
-        // Query Google Scholar to see if paper exists
         const scholarTest = await searchGoogleScholar(`${cleanAuthor} ${item.year}`, 2);
 
         if (scholarTest.length > 0) {
@@ -311,9 +419,10 @@ async function handleCitationValidator(req, res) {
 async function handleGenerateFull(req, res) {
   try {
     const { topic, discipline = 'paud', language = 'indonesia', citationFormat = 'APA7', options = {} } = req.body;
-    console.log(`[AcademAI Full Article] Memulai generate artikel lengkap untuk topik: "${topic}"...`);
+    const sessionId = req.body.sessionId || `academ_full_${Date.now()}`;
+    console.log(`[AcademAI Full Article] Memulai generate artikel lengkap untuk topik: "${topic}" (Session: ${sessionId})...`);
 
-    // Step 1: Query Google Scholar for 8 papers
+    // Step 1: Query Google Scholar for papers
     const scholarQuery = `${topic} pendidikan anak usia dini jurnal`;
     const scholarPapers = await searchGoogleScholar(scholarQuery, options.journalCount || 8);
     console.log(`[AcademAI Full Article] Ditemukan ${scholarPapers.length} jurnal pendukung.`);
@@ -332,8 +441,20 @@ async function handleGenerateFull(req, res) {
         scholarPapers.map((p, idx) => `[${idx+1}] ${p.citationKey}. "${p.title}". URL: ${p.link}. Ringkasan: ${p.snippet}`).join('\n');
     }
 
-    // Step 3: Build Prompt for Complete Thesis / Scientific Article Draft
-    const systemPrompt = buildMasterAcademicPrompt(discipline, citationFormat, referencesContext);
+    // Step 3: Periksa apakah ada dokumen memori sebelumnya di sesi ini
+    let memoryContext = '';
+    const existingDocs = getSessionDocuments(sessionId);
+    if (existingDocs.length > 0) {
+      memoryContext = "\n\n" +
+        "================================================================================\n" +
+        "MEMORI DOKUMEN RISET SEBELUMNYA DALAM PROYEK INI:\n" +
+        existingDocs.map((doc, idx) => `[DOKUMEN ${idx+1}: "${doc.title}"]\n${doc.content.substring(0, 1500)}...`).join('\n\n') +
+        "\n\nInstruksi: Selaraskan artikel baru dengan data/variabel yang telah tercatat dalam memori di atas!\n" +
+        "================================================================================\n";
+    }
+
+    // Step 4: Build Prompt for Complete Thesis / Scientific Article Draft
+    const systemPrompt = buildMasterAcademicPrompt(discipline, citationFormat, referencesContext + memoryContext);
     const userPrompt = `Tuliskan DRAF LENGKAP ARTIKEL ILMIAH / PROPOSAL SKRIPSI S1 PAUD yang komprehensif, mendalam, dan siap uji sidang untuk topik berikut:
 "${topic}"
 
@@ -407,16 +528,30 @@ STRUKTUR DOKUMEN WAJIB YANG HARUS DISUSUN SECARA LENGKAP:
 (Wajib menggunakan format ${citationFormat} secara alfabetis dan mencantumkan jurnal referensi yang telah disediakan).`;
 
     const { text: fullDocumentMarkdown, model: usedModel } = await callGemini(systemPrompt, userPrompt);
-    const wordCount = fullDocumentMarkdown.split(/\s+/).length;
+    const wordCount = fullDocumentMarkdown.split(/\s+/).filter(Boolean).length;
+
+    // 🔥 FITUR UTAMA: Simpan otomatis dokumen hasil generate ke memori sesi!
+    const memoryDoc = saveDocumentToMemory(sessionId, {
+      title: topic,
+      type: 'full_article',
+      content: fullDocumentMarkdown
+    });
+    console.log(`[AcademAI Memory] Dokumen hasil generate otomatis tersimpan ke memori sesi (${sessionId}): "${topic}" (${wordCount} kata)`);
 
     res.json({
       success: true,
-      sessionId: req.body.sessionId || `academ_full_${Date.now()}`,
+      sessionId,
       document: {
         content: fullDocumentMarkdown,
         wordCount,
         format: 'markdown',
         generatedAt: new Date().toISOString()
+      },
+      memory: {
+        saved: true,
+        docId: memoryDoc.id,
+        title: memoryDoc.title,
+        totalSessionDocs: getSessionDocuments(sessionId).length
       },
       meta: {
         model: usedModel,
@@ -430,7 +565,7 @@ STRUKTUR DOKUMEN WAJIB YANG HARUS DISUSUN SECARA LENGKAP:
   }
 }
 
-// Core Handler for Chat & Targeted Academic Generation
+// Core Handler for Chat & Targeted Academic Generation with Memory Context Retrieval
 async function handleGeneration(req, res) {
   try {
     const body = req.body || {};
@@ -449,8 +584,9 @@ async function handleGeneration(req, res) {
     const discipline = body.discipline || 'paud';
     const citationFormat = body.citationFormat || 'APA7';
     const sessionId = body.sessionId || `academ_${Date.now()}`;
+    const useMemory = body.useMemory !== false;
 
-    console.log(`[AcademAI Chat] Request mode="${mode}", discipline="${discipline}", message="${message.substring(0, 60)}..."`);
+    console.log(`[AcademAI Chat] Request mode="${mode}", discipline="${discipline}", sessionId="${sessionId}", message="${message.substring(0, 60)}..."`);
 
     // Step 1: Cari Jurnal Google Scholar
     const searchQuery = message.length > 5 ? `${message} paud jurnal` : 'pendidikan anak usia dini media loose parts motorik';
@@ -464,19 +600,40 @@ async function handleGeneration(req, res) {
       });
     }
 
-    // Step 2: Rangkum referensi untuk grounding prompt
+    // Step 2: Rangkum referensi Scholar untuk grounding prompt
     let referencesContext = '';
     if (scholarPapers.length > 0) {
       referencesContext = "\n\nREFERENSI ILMIAH DARI GOOGLE SCHOLAR (Gunakan sebagai sitasi wajib APA 7th):\n" +
         scholarPapers.map((p, i) => `[${i+1}] ${p.citationKey}. "${p.title}". Ringkasan: ${p.snippet}. Link: ${p.link}`).join('\n');
     }
 
-    // Step 3: Bangun System Prompt & User Instruction sesuai Mode
-    const systemPrompt = buildMasterAcademicPrompt(discipline, citationFormat, referencesContext);
+    // Step 3: 🔥 FITUR MEMORY RETRIEVAL: Ambil Dokumen dari Memori Sesi
+    let memoryContext = '';
+    let memoryDocsCount = 0;
+    if (useMemory) {
+      const sessionDocs = getSessionDocuments(sessionId);
+      memoryDocsCount = sessionDocs.length;
+      if (sessionDocs.length > 0) {
+        console.log(`[AcademAI Memory] Mengambil ${sessionDocs.length} dokumen dari memori sebagai konteks aktif.`);
+        memoryContext = "\n\n" +
+          "================================================================================\n" +
+          "MEMORI DOKUMEN RISET AKTIF (DOKUMEN DRAF SEBELUMNYA DALAM PROYEK INI):\n" +
+          "Berikut adalah dokumen/bab yang telah Anda dan peneliti susun sebelumnya. Dokumen ini adalah acuan konteks utama dan pijakan kontinuitas untuk menghasilkan output baru yang sinkron:\n\n" +
+          sessionDocs.map((doc, idx) => `--- [DOKUMEN MEMORI ${idx+1}: "${doc.title}" | Kategori: ${doc.type} | Panjang: ${doc.wordCount} kata] ---\n${doc.content}`).join('\n\n---\n\n') +
+          "\n\nPETUNJUK KELANJUTAN PENELITIAN DARI MEMORI:\n" +
+          "1. KONTINUITAS LOGIS: Analisis dokumen di memori di atas secara seksama. Hasilkan kelanjutan bab, pembahasan, instrumen, atau analisis baru yang menyambung secara logis dan runtut.\n" +
+          "2. KONSISTENSI DATA: Jangan mengubah variabel penelitian (Variabel X, Variabel Y), subjek anak PAUD, latar sekolah, atau model tindakan yang sudah ditetapkan di dokumen memori.\n" +
+          "3. NON-REDUNDAN: Hindari mengulang teks pendahuluan yang persis sama kecuali diminta merangkum; fokuslah pada pengembangan konten lanjutan yang diminta pengguna.\n" +
+          "================================================================================\n";
+      }
+    }
+
+    // Step 4: Bangun System Prompt & User Instruction sesuai Mode
+    const systemPrompt = buildMasterAcademicPrompt(discipline, citationFormat, referencesContext + memoryContext);
     let userInstruction = message;
 
     if (mode === 'abstract') {
-      userInstruction = `Buat ABSTRAK DWIBAHASA (Bahasa Indonesia 150-200 kata dan Bahasa Inggris / Abstract italic 150-200 kata) lengkap dengan Kata Kunci / Keywords untuk topik atau draf penelitian berikut:
+      userInstruction = `Buat ABSTRAK DWIBAHASA (Bahasa Indonesia 150-200 kata dan Bahasa Inggris / Abstract italic 150-200 kata) lengkap dengan Kata Kunci / Keywords untuk topik atau draf penelitian berikut (rujuk dokumen di memori jika ada):
 "${message}"
 
 Pedoman IMRAD:
@@ -486,7 +643,7 @@ Pedoman IMRAD:
 - Hasil Temuan Utama (peningkatan persentase ketuntasan indikator BB, MB, BSH, BSB).
 - Kesimpulan dan Implikasi Praktis.`;
     } else if (mode === 'SLR') {
-      userInstruction = `Susun SYSTEMATIC LITERATURE REVIEW (SLR) / KAJIAN PUSTAKA KOMPREHENSIF untuk topik berikut:
+      userInstruction = `Susun SYSTEMATIC LITERATURE REVIEW (SLR) / KAJIAN PUSTAKA KOMPREHENSIF untuk topik berikut (hubungkan dengan dokumen di memori jika tersedia):
 "${message}"
 
 Wajib menyertakan:
@@ -495,7 +652,7 @@ Wajib menyertakan:
 3. Kerangka Berpikir Teoretis dan Alur Konseptual.
 4. Identifikasi Research Gap yang belum terjawab oleh penelitian sebelumnya.`;
     } else if (mode === 'proposal') {
-      userInstruction = `Susun DRAF PROPOSAL PENELITIAN SKRIPSI S1 PAUD yang berbobot akademik tinggi mengenai:
+      userInstruction = `Susun DRAF PROPOSAL PENELITIAN SKRIPSI S1 PAUD yang berbobot akademik tinggi mengenai (manfaatkan data dari dokumen memori jika ada):
 "${message}"
 
 Struktur yang harus disusun:
@@ -534,6 +691,7 @@ Pedoman Analisis Statistik:
       userInstruction = `Tuliskan DRAF AKADEMIK MENDALAM (minimal 600-900 kata) mengenai:
 "${message}"
 
+Jika terdapat dokumen di memori riset, sambungkan dan kembangkan secara khusus sesuai permintaan di atas.
 Gunakan struktur Piramida Terbalik (Inverted Pyramid):
 1. Fenomena Makro (Kebijakan Kurikulum Merdeka PAUD / STPPA Permendikbudristek No 5/2022 / Profil Pelajar Pancasila).
 2. Kondisi Meso di satuan PAUD dan Mikro di kelas (keterbatasan stimulasi motorik/kognitif/sosio-emosional).
@@ -543,9 +701,9 @@ Gunakan struktur Piramida Terbalik (Inverted Pyramid):
 Sertakan sitasi in-text ${citationFormat} dan penomoran sub-bab yang rapi.`;
     }
 
-    // Step 4: Eksekusi Gemini
+    // Step 5: Eksekusi Gemini
     const { text: generatedMarkdown, model: usedModel } = await callGemini(systemPrompt, userInstruction);
-    const wordCount = generatedMarkdown.split(/\s+/).length;
+    const wordCount = generatedMarkdown.split(/\s+/).filter(Boolean).length;
 
     const responsePayload = {
       success: true,
@@ -561,7 +719,8 @@ Sertakan sitasi in-text ${citationFormat} dan penomoran sub-bab yang rapi.`;
       meta: {
         model: usedModel,
         scholarSourcesCount: scholarPapers.length,
-        zoteroSynced: scholarPapers.length > 0
+        zoteroSynced: scholarPapers.length > 0,
+        memoryDocsRetrieved: memoryDocsCount
       }
     };
 
@@ -588,6 +747,7 @@ app.listen(PORT, () => {
   console.log(`🧠 AI Engine     : Google Gemini (Smart Multi-Model Fallback)`);
   console.log(`🎓 Research Index: Google Scholar (SerpApi Organic Index)`);
   console.log(`📚 Reference Mgr : Zotero Library (andri_akademi - Skripsi S1 PAUD)`);
+  console.log(`💾 Memory System : Active (Disk Persistence at ./data/memory.json)`);
   console.log(`📋 Modules Active: Drafting, SLR, Proposal, Abstract,`);
   console.log(`                   Paraphrasing, Editing, Statistics, Validator`);
   console.log('========================================================');

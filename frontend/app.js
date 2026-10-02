@@ -16,6 +16,7 @@ const _n8nBase = (_cfg.N8N_URL && !_cfg.N8N_URL.includes('GANTI-DENGAN'))
 const CONFIG = {
   N8N_WEBHOOK:       _n8nBase + (_cfg.WEBHOOK_PATH || '/webhook/academ-ai'),
   N8N_HEALTHCHECK:   _n8nBase + '/healthz',
+  MEMORY_API:        _n8nBase + '/api/memory',
   PING_INTERVAL:     _cfg.PING_INTERVAL_MS     || 15000,
   REQUEST_TIMEOUT:   _cfg.REQUEST_TIMEOUT_MS   || 120000,
   IS_RAILWAY:        _n8nBase.includes('railway.app'),
@@ -52,6 +53,8 @@ const state = {
   messages: [],
   generatedContent: '',
   isConnected: false,
+  memoryDocuments: [],
+  useMemory: true,
 };
 
 // ── Utility Functions ────────────────────────
@@ -238,6 +241,7 @@ function newSession() {
   state.messages = [];
   document.getElementById('session-id-text').textContent = state.sessionId;
   clearChatMessages();
+  fetchMemoryDocuments();
   toast('Sesi baru dimulai', 'success', 2000);
 }
 
@@ -299,6 +303,7 @@ function appendMessage(role, content, timestamp = new Date().toISOString()) {
         ${!isUser ? `
         <div class="msg-actions">
           <button class="msg-action-btn" onclick="copyMessageContent('${msgId}')" aria-label="Salin pesan">📋 Salin</button>
+          <button class="msg-action-btn" onclick="saveChatMessageToMemory('${msgId}')" aria-label="Simpan ke memori konteks">🧠 Simpan ke Memori</button>
         </div>` : ''}
       </div>
     </div>
@@ -374,6 +379,7 @@ async function sendChatMessage() {
       message,
       citationFormat: 'APA7',
       language: 'indonesia',
+      useMemory: state.useMemory,
     };
 
     const result = await callAcademAI(payload);
@@ -453,6 +459,10 @@ function renderOutputContent(markdown) {
   // Show toolbar actions
   document.getElementById('copy-btn').style.display = '';
   document.getElementById('download-btn').style.display = '';
+  const saveMemBtn = document.getElementById('save-mem-btn');
+  const continueBtn = document.getElementById('continue-chat-btn');
+  if (saveMemBtn) saveMemBtn.style.display = '';
+  if (continueBtn) continueBtn.style.display = '';
   document.getElementById('output-title').textContent = '📄 Dokumen Tergenerate';
 }
 
@@ -522,7 +532,8 @@ async function generateFull() {
 
     const wordCount = result?.document?.wordCount || content.split(/\s+/).length;
     document.getElementById('gen-status-text').textContent = `✅ Selesai · ${wordCount.toLocaleString('id-ID')} kata`;
-    toast('Artikel berhasil digenerate!', 'success');
+    toast('Artikel berhasil digenerate & otomatis tersimpan ke Memori!', 'success');
+    fetchMemoryDocuments();
   } catch (err) {
     clearInterval(stepInterval);
     buildProgressSteps(-1, []);
@@ -547,6 +558,10 @@ function resetGenerate() {
     </div>`;
   document.getElementById('copy-btn').style.display = 'none';
   document.getElementById('download-btn').style.display = 'none';
+  const saveMemBtn = document.getElementById('save-mem-btn');
+  const continueBtn = document.getElementById('continue-chat-btn');
+  if (saveMemBtn) saveMemBtn.style.display = 'none';
+  if (continueBtn) continueBtn.style.display = 'none';
   document.getElementById('output-title').textContent = 'Output Dokumen';
   generateOutputRaw = '';
   toast('Form di-reset', 'info', 1800);
@@ -714,6 +729,7 @@ function init() {
   initSession();
   buildModeDropdown();
   checkConnection();
+  fetchMemoryDocuments();
   setInterval(checkConnection, CONFIG.PING_INTERVAL);
 
   // Set default mode display
@@ -728,9 +744,315 @@ function init() {
   chatInput.addEventListener('input', () => autoResizeTextarea(chatInput));
 }
 
+// ════════════════════════════════════════════════
+// ── MEMORY CONTEXT MANAGEMENT SUITE ─────────────
+// ════════════════════════════════════════════════
+
+async function fetchMemoryDocuments() {
+  if (!state.sessionId) return;
+  try {
+    const res = await fetch(`${CONFIG.MEMORY_API}/${encodeURIComponent(state.sessionId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      state.memoryDocuments = data.documents || [];
+      updateMemoryUI();
+    }
+  } catch (e) {
+    console.warn('[Memory] Gagal mengambil dokumen memori:', e.message);
+  }
+}
+
+function updateMemoryUI() {
+  const count = state.memoryDocuments.length;
+  const countBadge = document.getElementById('memory-count-badge');
+  if (countBadge) countBadge.textContent = count;
+
+  const banner = document.getElementById('memory-context-banner');
+  const bannerText = document.getElementById('memory-banner-text');
+  if (banner && bannerText) {
+    if (count > 0 && state.useMemory) {
+      const latestDoc = state.memoryDocuments[0];
+      const previewTitle = latestDoc.title.length > 40 ? latestDoc.title.slice(0, 37) + '...' : latestDoc.title;
+      bannerText.innerHTML = `Konteks Aktif: <strong>${count} Dokumen</strong> ("${escapeHtml(previewTitle)}")`;
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
+  }
+
+  // If modal is currently open, re-render list
+  const modal = document.getElementById('memory-modal');
+  if (modal && !modal.classList.contains('hidden')) {
+    renderMemoryModalList();
+  }
+}
+
+function clearMemoryContextBanner() {
+  const banner = document.getElementById('memory-context-banner');
+  if (banner) banner.classList.add('hidden');
+}
+
+function openMemoryModal() {
+  const modal = document.getElementById('memory-modal');
+  if (!modal) return;
+  renderMemoryModalList();
+  modal.classList.remove('hidden');
+}
+
+function closeMemoryModal() {
+  const modal = document.getElementById('memory-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function closeMemoryModalOnBackdrop(e) {
+  if (e.target && e.target.id === 'memory-modal') {
+    closeMemoryModal();
+  }
+}
+
+function renderMemoryModalList() {
+  const listEl = document.getElementById('memory-docs-list');
+  if (!listEl) return;
+
+  if (state.memoryDocuments.length === 0) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:32px 16px;color:var(--t-muted);background:rgba(255,255,255,0.02);border-radius:var(--radius-sm);border:1px dashed rgba(255,255,255,0.08);">
+        <div style="font-size:2rem;margin-bottom:8px;">🧠</div>
+        <p style="font-size:0.9rem;font-weight:500;color:var(--t-secondary);">Belum ada dokumen dalam memori riset sesi ini.</p>
+        <p style="font-size:0.8rem;margin-top:4px;">Generate artikel pada tab "Generate Artikel" atau klik "Simpan ke Memori" pada respons chat untuk menjadikannya konteks lanjutan.</p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = state.memoryDocuments.map((doc, idx) => {
+    const formattedDate = new Date(doc.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+    const categoryLabels = {
+      full_article: '📄 Draf Artikel Lengkap',
+      draft: '✍️ Draf / Bab',
+      bab1: '📖 Bab I',
+      bab2: '📚 Bab II',
+      bab3: '⚙️ Bab III',
+      abstract: '📑 Abstrak',
+      custom: '📝 Dokumen Manual'
+    };
+    const catLabel = categoryLabels[doc.type] || '📄 Dokumen Riset';
+
+    return `
+      <div class="memory-doc-card" id="mem-card-${doc.id}">
+        <div class="memory-doc-header">
+          <span class="memory-doc-title">${escapeHtml(doc.title)}</span>
+          <span class="memory-doc-badge">${catLabel}</span>
+        </div>
+        <div class="memory-doc-meta">
+          <span>📊 ${doc.wordCount.toLocaleString('id-ID')} kata</span>
+          <span>🕒 ${formattedDate}</span>
+          <span style="color:var(--c-accent)">✓ Konteks Aktif</span>
+        </div>
+        <div class="memory-doc-actions">
+          <button class="btn btn-accent btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'bab2')">
+            ✍️ Lanjutkan Bab II / III
+          </button>
+          <button class="btn btn-secondary btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'abstract')">
+            📑 Buat Abstrak
+          </button>
+          <button class="btn btn-ghost btn-xs" onclick="previewMemoryDoc('${doc.id}')">
+            👀 Pratinjau
+          </button>
+          <button class="btn btn-ghost btn-xs" style="color:var(--c-danger);margin-left:auto;" onclick="deleteMemoryDoc('${doc.id}')">
+            🗑️ Hapus
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function saveCurrentOutputToMemory() {
+  if (!generateOutputRaw) {
+    toast('Tidak ada artikel tergenerate untuk disimpan!', 'warn');
+    return;
+  }
+
+  const topicInput = document.getElementById('gen-topic');
+  const title = (topicInput && topicInput.value.trim()) || 'Draf Artikel Lengkap S1 PAUD';
+
+  try {
+    const res = await fetch(CONFIG.MEMORY_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: state.sessionId,
+        title,
+        content: generateOutputRaw,
+        type: 'full_article'
+      })
+    });
+
+    if (res.ok) {
+      toast('✅ Berhasil disimpan ke Memori Konteks!', 'success');
+      fetchMemoryDocuments();
+    } else {
+      const err = await res.json();
+      toast(`Gagal simpan: ${err.error || 'Server error'}`, 'error');
+    }
+  } catch (e) {
+    toast(`Gagal simpan memori: ${e.message}`, 'error');
+  }
+}
+
+async function continueInChatWithContext() {
+  // Ensure document is saved in memory
+  if (generateOutputRaw) {
+    await saveCurrentOutputToMemory();
+  }
+
+  // Switch to Chat tab
+  switchTab('chat');
+
+  // Pre-fill chat textarea with continuous prompt
+  const topicInput = document.getElementById('gen-topic');
+  const topic = (topicInput && topicInput.value.trim()) || 'draf artikel di atas';
+
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.value = `Berdasarkan draf dokumen penelitian "${topic}" yang tersimpan di memori, tolong buatkan kelanjutan yang mendalam untuk:
+1. Kisi-kisi instrumen observasi aktivitas anak dan guru di kelas.
+2. Rubrik penilaian perkembangan anak lengkap dengan indikator BB, MB, BSH, dan BSB.
+3. Rencana tindakan siklus I dan siklus II (PTK).`;
+    autoResizeTextarea(chatInput);
+    chatInput.focus();
+  }
+
+  toast('Konteks dokumen diaktifkan di Chat!', 'success', 2500);
+}
+
+async function saveChatMessageToMemory(msgId) {
+  const row = document.getElementById(msgId);
+  if (!row) return;
+  const bubble = row.querySelector('.msg-bubble');
+  if (!bubble) return;
+
+  const content = bubble.innerText;
+  if (!content || content.length < 20) {
+    toast('Konten pesan terlalu pendek untuk dijadikan memori dokumen', 'warn');
+    return;
+  }
+
+  // Extract first heading or first line as title
+  const firstLine = content.split('\n')[0].replace(/^[#*\s-]+/, '').trim().slice(0, 50);
+  const title = prompt('Masukkan Judul untuk Dokumen Memori ini:', firstLine || 'Draf Bagian Skripsi');
+  if (!title) return;
+
+  try {
+    const res = await fetch(CONFIG.MEMORY_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: state.sessionId,
+        title,
+        content,
+        type: 'draft'
+      })
+    });
+
+    if (res.ok) {
+      toast(`✅ "${title}" tersimpan ke Memori Konteks!`, 'success');
+      fetchMemoryDocuments();
+    } else {
+      toast('Gagal menyimpan ke memori', 'error');
+    }
+  } catch (e) {
+    toast(`Error: ${e.message}`, 'error');
+  }
+}
+
+async function deleteMemoryDoc(docId) {
+  try {
+    const res = await fetch(`${CONFIG.MEMORY_API}/${encodeURIComponent(state.sessionId)}/${encodeURIComponent(docId)}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      state.memoryDocuments = state.memoryDocuments.filter(d => d.id !== docId);
+      updateMemoryUI();
+      toast('Dokumen dihapus dari memori', 'info', 1500);
+    }
+  } catch (e) {
+    toast(`Gagal hapus: ${e.message}`, 'error');
+  }
+}
+
+async function clearAllSessionMemory() {
+  if (!confirm('Yakin ingin mengosongkan seluruh memori dokumen di sesi ini?')) return;
+  try {
+    const res = await fetch(`${CONFIG.MEMORY_API}/${encodeURIComponent(state.sessionId)}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      state.memoryDocuments = [];
+      updateMemoryUI();
+      toast('Seluruh memori dokumen telah dikosongkan', 'success', 2000);
+    }
+  } catch (e) {
+    toast(`Gagal mengosongkan memori: ${e.message}`, 'error');
+  }
+}
+
+function promptAddNewMemoryDoc() {
+  const title = prompt('Judul Dokumen Memori:', 'Konteks Latar Belakang / Teori Tambahan');
+  if (!title) return;
+  const content = prompt('Tempelkan teks dokumen yang ingin dimasukkan ke memori:');
+  if (!content || !content.trim()) return;
+
+  fetch(CONFIG.MEMORY_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sessionId: state.sessionId,
+      title,
+      content,
+      type: 'custom'
+    })
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      toast('Dokumen berhasil ditambahkan ke memori', 'success');
+      fetchMemoryDocuments();
+    }
+  }).catch(e => toast(e.message, 'error'));
+}
+
+function useDocAsChatContinuation(docId, chapterType) {
+  const doc = state.memoryDocuments.find(d => d.id === docId);
+  if (!doc) return;
+
+  closeMemoryModal();
+  switchTab('chat');
+
+  const chatInput = document.getElementById('chat-input');
+  if (!chatInput) return;
+
+  if (chapterType === 'bab2') {
+    chatInput.value = `Berdasarkan dokumen "${doc.title}" yang tersimpan di memori riset, tolong buatkan BAB II (Kajian Pustaka, Matriks Komparasi 5 Penelitian Terdahulu, dan Kerangka Berpikir) yang selaras dengan variabel penelitian yang sudah ada.`;
+  } else if (chapterType === 'abstract') {
+    chatInput.value = `Berdasarkan dokumen "${doc.title}" yang tersimpan di memori riset, buatkan ABSTRAK DWIBAHASA (Indonesia & Inggris) sesuai format IMRAD lengkap dengan Kata Kunci / Keywords.`;
+  } else {
+    chatInput.value = `Berdasarkan dokumen "${doc.title}" di memori, lanjutkan analisis...`;
+  }
+
+  autoResizeTextarea(chatInput);
+  chatInput.focus();
+  toast('Prompt kelanjutan telah disiapkan!', 'info', 2000);
+}
+
+function previewMemoryDoc(docId) {
+  const doc = state.memoryDocuments.find(d => d.id === docId);
+  if (!doc) return;
+  alert(`=== ${doc.title} (${doc.wordCount} kata) ===\n\n` + doc.content.substring(0, 1000) + (doc.content.length > 1000 ? '\n\n...(Dipotong untuk pratinjau ringkas)' : ''));
+}
+
 // Wait for DOM + scripts
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }
+

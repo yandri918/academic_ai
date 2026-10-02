@@ -18,3 +18,7 @@ desktop.ini
 
 # n8n local data
 .n8n/
+
+# Persistent memory data
+data/*
+!data/.gitkeep
