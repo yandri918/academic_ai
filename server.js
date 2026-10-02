@@ -1385,7 +1385,7 @@ app.get('/api/export/docx/:sessionId/:docId', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log('========================================================');
   console.log(`🚀 AcademAI Server running on port ${PORT}`);
   console.log(`👉 Web Interface : http://localhost:${PORT}`);

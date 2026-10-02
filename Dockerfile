@@ -21,8 +21,7 @@ COPY . .
 # Ensure storage directories exist
 RUN mkdir -p /app/data /app/exports /app/uploads
 
-# Expose server port (Railway dynamically injects PORT)
-ENV PORT=3000
+# Expose default port
 EXPOSE 3000
 
 # Healthcheck
