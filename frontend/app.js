@@ -120,14 +120,14 @@ async function callAcademAI(payload) {
 
     const text = await response.text();
     if (!text || text.trim() === '') {
-      throw new Error('Server n8n merespons kosong (200 OK tanpa body). Ini terjadi jika node AI Agent di n8n gagal mengeksekusi model atau berhenti di tengah jalan. Pastikan Anda mengimpor academ_ai_workflow_gemini.json dan API Key Gemini sudah terhubung.');
+      throw new Error('Server AcademAI merespons kosong. Pastikan server lokal berjalan dan API Key Gemini aktif di .env.');
     }
 
     try {
       const data = JSON.parse(text);
       return data;
     } catch (parseErr) {
-      throw new Error(`Gagal parse JSON dari n8n: ${text.substring(0, 150)}...`);
+      throw new Error(`Gagal parse JSON dari server: ${text.substring(0, 150)}...`);
     }
   } catch (err) {
     clearTimeout(timeoutId);
@@ -140,21 +140,20 @@ async function callAcademAI(payload) {
 async function checkConnection() {
   const dot = document.getElementById('status-dot');
   const text = document.getElementById('status-text');
-  const label = CONFIG.IS_RAILWAY ? 'Railway' : 'n8n';
   try {
     const r = await fetch(CONFIG.N8N_HEALTHCHECK, {
       method: 'GET',
       signal: AbortSignal.timeout(4000),
     });
-    if (r.ok || r.status === 401) { // 401 = basic auth = n8n is running
+    if (r.ok || r.status === 401) {
       dot.className = 'status-dot';
-      text.textContent = `${label} Online`;
+      text.textContent = 'AcademAI Online';
       state.isConnected = true;
       return;
     }
   } catch (_) { /* ignore */ }
   dot.className = 'status-dot offline';
-  text.textContent = `${label} Offline`;
+  text.textContent = 'Offline';
   state.isConnected = false;
 }
 
@@ -391,7 +390,7 @@ async function sendChatMessage() {
     state.messages.push({ role: 'ai', content });
   } catch (err) {
     removeTypingIndicator();
-    const errMsg = `❌ **Gagal menghubungi n8n**: ${err.message}\n\nPastikan:\n1. Server n8n Railway berjalan (online)\n2. Toggle workflow di n8n Railway sudah diubah ke **Active** (warna hijau)\n3. API Key Gemini sudah terpasang di n8n`;
+    const errMsg = `❌ **Gagal memproses permintaan**: ${err.message}\n\nPastikan:\n1. Server AcademAI berjalan di \`http://localhost:3000\`\n2. Koneksi internet stabil\n3. GEMINI_API_KEY valid di file \`.env\``;
     appendMessage('ai', errMsg);
     toast(err.message, 'error');
   } finally {
@@ -527,7 +526,7 @@ async function generateFull() {
   } catch (err) {
     clearInterval(stepInterval);
     buildProgressSteps(-1, []);
-    const errMd = `## ❌ Generate Gagal\n\n**Error**: ${err.message}\n\n**Langkah perbaikan:**\n1. Pastikan Docker berjalan: \`docker-compose up -d\`\n2. Pastikan workflow n8n aktif\n3. Cek API key Anthropic di n8n credential\n4. Coba lagi beberapa saat`;
+    const errMd = `## ❌ Generate Gagal\n\n**Error**: ${err.message}\n\n**Langkah perbaikan:**\n1. Pastikan server lokal berjalan: \`node server.js\`\n2. Cek kuota / API Key Gemini di \`.env\`\n3. Coba ulangi dengan topik yang lebih spesifik`;
     renderOutputContent(errMd);
     document.getElementById('gen-status-text').textContent = '❌ Generate gagal';
     toast(err.message, 'error');
@@ -614,7 +613,7 @@ async function validateCitations() {
           <span class="citation-status-icon">❌</span>
           <span style="color:var(--c-danger)">Validasi gagal: ${escapeHtml(err.message)}</span>
         </div>
-        <div class="citation-detail">Pastikan n8n berjalan dan workflow aktif.</div>
+        <div class="citation-detail">Pastikan server AcademAI berjalan di http://localhost:3000.</div>
       </div>`;
     document.getElementById('validator-status').textContent = '❌ Gagal';
     toast(err.message, 'error');
