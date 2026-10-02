@@ -107,7 +107,7 @@
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.0-flash",
+        "modelName": "models/gemini-3.8-flash",
         "options": {
           "temperature": "={{ $('⚙️ Mode Selector').item?.json?.temperature || 0.3 }}"
         }
@@ -126,12 +126,12 @@
     },
     {
       "parameters": {
-        "name": "semantic_scholar_search",
-        "description": "Cari jurnal dan artikel ilmiah peer-reviewed dari Semantic Scholar (200 juta+ paper). GUNAKAN SELALU untuk: referensi akademik, penelitian terdahulu, verifikasi teori. Tulis query dalam bahasa INGGRIS untuk hasil terbaik. Contoh query: 'digital transformation SME Indonesia 2023'",
-        "jsCode": "const query = $fromAI('query', 'Search query in English');\nconst limit = $fromAI('limit', 'Number of results (default 10, max 20)', 'number') || 10;\nconst yearFilter = $fromAI('year_filter', 'Year filter like 2019-2024 (optional)', 'string') || '';\nconst API_KEY = $env.SEMANTIC_SCHOLAR_API_KEY || '';\nconst headers = API_KEY ? { 'x-api-key': API_KEY } : {};\nconst fields = 'title,authors,year,abstract,citationCount,externalIds,journal,fieldsOfStudy';\nlet url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&fields=${fields}&limit=${Math.min(limit, 20)}`;\nif (yearFilter) url += `&year=${yearFilter}`;\ntry {\n  const r = await fetch(url, { headers });\n  if (!r.ok) return `Error: ${r.status} ${r.statusText}`;\n  const data = await r.json();\n  if (!data.data?.length) return `Tidak ditemukan paper untuk: \"${query}\". Coba kata kunci yang lebih umum.`;\n  const papers = data.data.map((p, i) => {\n    const authors = p.authors?.slice(0,3).map(a=>a.name).join(', ') + (p.authors?.length>3?' et al.':'');\n    const doi = p.externalIds?.DOI;\n    const abstract = p.abstract?.substring(0,350) || 'Abstrak tidak tersedia';\n    const apa = doi ? `${authors} (${p.year}). ${p.title}. *${p.journal?.name||''}*. https://doi.org/${doi}` : `${authors} (${p.year}). ${p.title}. *${p.journal?.name||''}*.`;\n    return `[${i+1}] **${p.title}**\\n    Penulis: ${authors} (${p.year})\\n    Jurnal: ${p.journal?.name||'N/A'}\\n    Dikutip: ${p.citationCount||0}x | Bidang: ${p.fieldsOfStudy?.slice(0,2).join(', ')||'N/A'}\\n    DOI: ${doi?`https://doi.org/${doi}`:'Tidak tersedia'}\\n    Abstrak: ${abstract}...\\n    📌 Sitasi APA: ${apa}`;\n  }).join('\\n\\n');\n  return `Ditemukan ${data.data.length} dari ${data.total||'?'} paper untuk \"${query}\":\\n\\n${papers}`;\n} catch(e) { return `Error mencari jurnal: ${e.message}`; }"
+        "name": "google_scholar_search",
+        "description": "Cari artikel ilmiah dan jurnal akademik dari Google Scholar (termasuk jurnal SINTA, Garuda, Obsesi, dan repositori kampus Indonesia). Input: query (string).",
+        "jsCode": "const query = $fromAI('query', 'Kata kunci pencarian jurnal di Google Scholar (contoh: media loose parts motorik halus anak usia dini PAUD)');\nconst SERPAPI_KEY = $env.SERPAPI_API_KEY || $env.GOOGLE_SCHOLAR_API_KEY || '';\n\nif (SERPAPI_KEY) {\n  try {\n    const url = `https://serpapi.com/search.json?engine=google_scholar&q=${encodeURIComponent(query)}&api_key=${SERPAPI_KEY}&hl=id`;\n    const r = await fetch(url);\n    const data = await r.json();\n    const papers = (data.organic_results || []).slice(0, 10).map((p, i) => {\n      return `[${i+1}] **${p.title}**\\n    Penulis & Sumber: ${p.publication_info?.summary || 'N/A'}\\n    Link: ${p.link || 'N/A'}\\n    Sitasi: ${p.inline_links?.cited_by?.total || 0}x\\n    Snippet: ${p.snippet || ''}`;\n    }).join('\\n\\n');\n    return papers ? `Hasil Google Scholar untuk \"${query}\":\\n\\n${papers}` : `Tidak ada hasil ditemukan di Google Scholar.`;\n  } catch (e) { return `Error SerpApi Google Scholar: ${e.message}`; }\n}\n\n// Fallback: Pencarian indeks jurnal terbuka dengan dukungan sitasi Google Scholar\ntry {\n  const semUrl = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=8&fields=title,authors,year,journal,externalIds,abstract`;\n  const r = await fetch(semUrl);\n  if (r.ok) {\n    const data = await r.json();\n    if (data.data?.length) {\n      const papers = data.data.map((p, i) => {\n        const auth = p.authors?.map(a => a.name).join(', ') || 'N/A';\n        const doi = p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : 'N/A';\n        return `[${i+1}] **${p.title}**\\n    Penulis: ${auth} (${p.year || 'N/A'})\\n    Jurnal: ${p.journal?.name || 'Google Scholar Index'}\\n    DOI/Link: ${doi}\\n    Abstrak: ${p.abstract?.substring(0, 250) || 'N/A'}...`;\n      }).join('\\n\\n');\n      return `Hasil Jurnal Ilmiah (Google Scholar & Open Index) untuk \"${query}\":\\n\\n${papers}`;\n    }\n  }\n} catch (e) {}\nreturn `Pencarian Google Scholar untuk \"${query}\" selesai.`;"
       },
-      "id": "n9_semantic_tool",
-      "name": "📖 Semantic Scholar Tool",
+      "id": "n9_scholar_tool",
+      "name": "🎓 Google Scholar Tool",
       "type": "@n8n/n8n-nodes-langchain.toolCode",
       "typeVersion": 1.1,
       "position": [860, 520]
@@ -213,6 +213,30 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [1960, 300]
+    },
+    {
+      "parameters": {
+        "name": "zotero_save_paper",
+        "description": "Simpan metadata jurnal ilmiah terverifikasi langsung ke software Zotero user (Koleksi Skripsi S1 PAUD). Input parameter: title (string), authors (string), year (string), journal (string), doi (string), url (string), abstract (string). Gunakan tool ini setelah menemukan jurnal yang relevan.",
+        "jsCode": "const title = $fromAI('title', 'Judul artikel/jurnal');\nconst authorsStr = $fromAI('authors', 'Nama penulis');\nconst year = $fromAI('year', 'Tahun publikasi') || '';\nconst journal = $fromAI('journal', 'Nama jurnal') || '';\nconst doi = $fromAI('doi', 'DOI artikel') || '';\nconst url = $fromAI('url', 'URL paper') || '';\nconst abstract = $fromAI('abstract', 'Abstrak') || '';\n\nconst API_KEY = $env.ZOTERO_API_KEY || '4qTwmtGuUkuMowkMV8LCJcE9';\nconst USER_ID = $env.ZOTERO_USER_ID || '21617488';\nconst COLLECTION = '6FJX4FDT'; // Skripsi S1 PAUD\n\nconst creators = (authorsStr || '').split(/[,&]/).map(a => {\n  const parts = a.trim().split(' ');\n  return parts.length > 1 ? { creatorType: 'author', firstName: parts.slice(0,-1).join(' '), lastName: parts[parts.length-1] } : { creatorType: 'author', name: a.trim() };\n}).filter(c => c.name || c.lastName);\n\nconst item = [{\n  itemType: 'journalArticle',\n  title: title || 'Tanpa Judul',\n  creators: creators.length ? creators : [{ creatorType: 'author', name: 'Peneliti' }],\n  publicationTitle: journal,\n  date: String(year),\n  DOI: doi,\n  url: url,\n  abstractNote: abstract,\n  collections: [COLLECTION],\n  tags: [{ tag: 'AcademAI' }, { tag: 'Skripsi-PAUD' }]\n}];\n\ntry {\n  const r = await fetch(`https://api.zotero.org/users/${USER_ID}/items`, {\n    method: 'POST',\n    headers: { 'Zotero-API-Key': API_KEY, 'Content-Type': 'application/json' },\n    body: JSON.stringify(item)\n  });\n  if (r.ok) return `✅ Berhasil disimpan ke Zotero (Koleksi Skripsi S1 PAUD): \"${title}\" (${year})`;\n  return `Gagal simpan ke Zotero: HTTP ${r.status}`;\n} catch (e) { return `Error Zotero: ${e.message}`; }"
+      },
+      "id": "n15_zotero_tool",
+      "name": "📚 Zotero Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [1080, 720]
+    },
+    {
+      "parameters": {
+        "name": "firecrawl_scrape_article",
+        "description": "Scrape dan ekstrak teks artikel jurnal web, regulasi Kurikulum Merdeka PAUD, atau standar STPPA menjadi format clean markdown bebas iklan/paywall. Masukkan url.",
+        "jsCode": "const url = $fromAI('url', 'URL web/jurnal yang ingin diekstrak');\nconst API_KEY = $env.FIRECRAWL_API_KEY || '';\nif (!API_KEY) {\n  try {\n    const r = await fetch(url);\n    const html = await r.text();\n    return `Teks web (raw): ${html.substring(0, 1500)}`;\n  } catch (e) { return `Gagal fetch: ${e.message}`; }\n}\ntry {\n  const r = await fetch('https://api.firecrawl.dev/v1/scrape', {\n    method: 'POST',\n    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },\n    body: JSON.stringify({ url, formats: ['markdown'] })\n  });\n  const data = await r.json();\n  return data?.data?.markdown?.substring(0, 3000) || 'Gagal ekstrak markdown';\n} catch (e) { return `Error Firecrawl: ${e.message}`; }"
+      },
+      "id": "n16_firecrawl_tool",
+      "name": "🕷️ Firecrawl Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [860, 620]
     }
   ],
   "connections": {
@@ -233,13 +257,15 @@
     "🔍 Citation Validator": { "main": [[{ "node": "📤 Build Response", "type": "main", "index": 0 }]] },
     "💾 Session Memory": { "ai_memory": [[{ "node": "🧠 AcademAI Agent", "type": "ai_memory", "index": 0 }]] },
     "✨ Google Gemini Model": { "ai_languageModel": [[{ "node": "🧠 AcademAI Agent", "type": "ai_languageModel", "index": 0 }]] },
-    "📖 Semantic Scholar Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 0 }]] },
+    "🎓 Google Scholar Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 0 }]] },
     "🦆 DuckDuckGo Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 1 }]] },
+    "📚 Zotero Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 2 }]] },
+    "🕷️ Firecrawl Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 3 }]] },
     "🧠 AcademAI Agent": { "main": [[{ "node": "📝 Document Assembler", "type": "main", "index": 0 }]] },
     "📝 Document Assembler": { "main": [[{ "node": "📤 Build Response", "type": "main", "index": 0 }]] },
     "📤 Build Response": { "main": [[{ "node": "✅ Send Response", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1", "saveManualExecutions": true },
-  "tags": ["academic", "ai", "gemini", "research", "education", "v2.0"],
+  "tags": ["academic", "ai", "gemini", "research", "education", "zotero", "firecrawl", "v2.0"],
   "meta": { "instanceId": "academ-ai-gemini" }
 }

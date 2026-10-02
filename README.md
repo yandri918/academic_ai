@@ -2,10 +2,13 @@
 # AcademAI v2.0 — README
 # ============================================
 
-# 🎓 AcademAI — AI Scientific Article Generator
+# 🎓 AcademAI — AI Scientific Article & Thesis Generator
+### Frontier Edition (Powered by Google Gemini 2.0 & n8n Agent Harness)
 
-> **Stack**: Claude Sonnet 4.5 · n8n · Semantic Scholar · DuckDuckGo · Gotenberg  
-> **Version**: 2.0 | **Scope**: Dunia Pendidikan & Akademik
+> 🎃 **Hacktoberfest 2026 Weekend Challenge Submission**: *Build for a Friend*  
+> **Dedicated to**: Helping my wife complete her undergraduate thesis in Early Childhood Education (S1 PAUD).  
+> **Frontier AI**: Google Gemini 3.8 Flash · n8n Open Agent Harness · Google Scholar · Zotero · Gotenberg  
+> **Version**: 2.0 | **License**: MIT
 
 ---
 
@@ -13,14 +16,18 @@
 
 ```
 academ-ai/
-├── docker-compose.yml          # Stack: n8n + Gotenberg
-├── .env.example                # Template environment variables
-├── .env                        # (Dibuat dari .env.example, jangan di-commit!)
-├── start.ps1                   # Script setup & run otomatis
+├── docker-compose.yml              # Stack: n8n + Gotenberg
+├── .env.example                    # Template environment variables
+├── start.ps1                       # Script setup & run otomatis
+├── DEV_SUBMISSION.md               # Naskah submission resmi DEV.to
+├── academic.md                     # Dokumen spesifikasi arsitektur lengkap
 ├── n8n/
-│   └── academ_ai_workflow_v2.json  # Workflow n8n siap import
-├── uploads/                    # File yang diupload user
-└── exports/                    # Dokumen hasil export
+│   ├── academ_ai_workflow_gemma.json   # 💎 Workflow Gemma 2 (Open-Weight / Ollama)
+│   ├── academ_ai_workflow_gemini.json  # Workflow Google Gemini API
+│   └── academ_ai_workflow_v2.json      # Workflow Claude Sonnet
+├── frontend/                       # Web UI ringan (HTML5 + Vanilla CSS/JS)
+├── uploads/                        # File / data observasi lokal
+└── exports/                        # Hasil export PDF / DOCX
 ```
 
 ---
