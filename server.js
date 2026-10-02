@@ -142,7 +142,7 @@ app.get('/healthz', (req, res) => {
     server: 'AcademAI Universal Academic Engine',
     discipline: 'Universal Academic Research (Multi-Disciplinary)',
     features: ['memory_context', 'pdf_parser', 'plagiarism_checker', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator', 'academic_stats', 'dataviz_mcp'],
-    models: ['gemma-4-26b-a4b-it', 'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash']
+    models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-3.8-flash']
   });
 });
 
@@ -360,10 +360,10 @@ async function callGemini(systemPrompt, userPrompt) {
   }
 
   const models = [
-    'gemma-4-26b-a4b-it',     // Primary Google Open-Weight Model (Gemma)
-    'gemini-3.1-flash-lite',  // Fast fallback
-    'gemini-3.5-flash-lite',  // Fallback
-    'gemini-3.7-flash'        // Fallback
+    'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash'
   ];
   let lastError = null;
 

@@ -7,7 +7,7 @@
 [![Hacktoberfest 2026](https://img.shields.io/badge/Hacktoberfest-2026%20Submission-orange.svg)](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)
 
 > 🎃 **Submission for [Hacktoberfest Weekend Challenge: Build for a Friend](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)**  
-> **Dedicated to**: Helping my wife complete her undergraduate thesis in Early Childhood Education (S1 PAUD), powered by **Google Gemma (Open-Weight)** and **SerpApi** for grounded literature search.
+> **Dedicated to**: Helping my wife complete her undergraduate thesis in Early Childhood Education (S1 PAUD), powered by an open-source Node.js agent harness, **Google Gemini**, and **SerpApi** for grounded literature search.
 
 ---
 
@@ -196,7 +196,6 @@ academic_ai/
 
 ## 🏆 Hacktoberfest 2026 Partner Categories
 
-- **Best Use of Gemma**: AcademAI uses Google's open-weight **Gemma** (`gemma-4-26b-a4b-it`) as its primary reasoning model for literature synthesis, theory matching, and discussion drafting, wrapped in a lightweight self-hostable harness.
 - **Best Use of SerpApi**: AcademAI integrates **SerpApi** to query the live **Google Scholar** index, grounding thesis writing in verified, peer-reviewed publications and providing students with traceable citation links.
 
 ---

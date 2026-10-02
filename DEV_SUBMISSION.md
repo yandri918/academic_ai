@@ -2,7 +2,7 @@
 title: "AcademAI — An Open-Source Research Companion Built for My Wife's PAUD Thesis"
 published: true
 tags: hacktoberfest, ai, opensource, webdev
-description: "Helping students find traceable sources, understand their data, and develop research drafts they can review and defend. Powered by Google Gemma & SerpApi."
+description: "Helping students find traceable sources, understand their data, and develop research drafts they can review and defend. Powered by an open-source Node.js agent harness, Google Gemini, and SerpApi."
 ---
 
 *This is a submission for the [Hacktoberfest Weekend Challenge: Build for a Friend](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)*
@@ -81,10 +81,10 @@ curl -s https://academicai-production-a41d.up.railway.app/healthz
     "dataviz_mcp"
   ],
   "models": [
-    "gemma-4-26b-a4b-it",
     "gemini-3.1-flash-lite",
     "gemini-3.5-flash-lite",
-    "gemini-3.7-flash"
+    "gemini-3.7-flash",
+    "gemini-3.8-flash"
   ]
 }
 ```
@@ -116,17 +116,20 @@ curl -s https://academicai-production-a41d.up.railway.app/healthz
 │        ┌───────────────────────┼────────────────────────┐       │
 │        ▼                       ▼                        ▼       │
 │ ┌────────────────┐    ┌─────────────────┐      ┌──────────────┐ │
-│ │  Google Gemma  │    │ SerpApi Engine  │      │ Zotero REST  │ │
-│ │  (Open-Weight) │    │ Google Scholar  │      │ Reference    │ │
-│ │  Primary Model │    │ Live Index      │      │ Sync         │ │
-│ └────────┬───────┘    └─────────────────┘      └──────────────┘ │
-│          │ (Automatic Fallback if Busy)                         │
-│          ▼                                                      │
-│ ┌────────────────┐    ┌─────────────────┐      ┌──────────────┐ │
-│ │ Gemini Fallback│    │ Pure-JS Stats   │      │ DOCX Exporter│ │
-│ │ Flash Cascade  │    │ Paired t-Test   │      │ Formatted    │ │
-│ │ 3.1/3.5/3.7    │    │ Hake N-Gain     │      │ Word Output  │ │
+│ │ Google Gemini  │    │ SerpApi Engine  │      │ Zotero REST  │ │
+│ │ 4-Model Chain  │    │ Google Scholar  │      │ Reference    │ │
+│ │ Fallback Logic │    │ Live Index      │      │ Sync         │ │
 │ └────────────────┘    └─────────────────┘      └──────────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────┐   ┌───────────────────────────┐ │
+│ │ Pure-JS Statistics Engine   │   │ RegEx Citation Validator  │ │
+│ │ Paired t-Test · Hake N-Gain │   │ APA7 / CrossRef Checker   │ │
+│ └─────────────────────────────┘   └───────────────────────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────┐   ┌───────────────────────────┐ │
+│ │ Persistent Document Memory  │   │ DOCX Academic Exporter    │ │
+│ │ Local JSON Session Storage  │   │ Formatted Word Packaging  │ │
+│ └─────────────────────────────┘   └───────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
              Deployed via Dockerfile → Railway Cloud
 ```
@@ -206,24 +209,23 @@ app.post('/api/stats/calculate', (req, res) => {
 
 <!-- Which open-source AI did you use (open-weight models, agent harnesses, frameworks, local inference), and how is your project built around it? -->
 
-AcademAI is architected around **Google Gemma** (open-weight model), **SerpApi** for grounded scholarly search, and an open-source Node.js agent harness:
+The challenge explicitly accepts **open-source agent harnesses** as a qualifying open-source AI foundation. AcademAI is built around a custom, lightweight **Node.js/Express open-source agent harness** (`server.js`, MIT Licensed), powered by **Google Gemini** and grounded with **SerpApi**:
 
-### 1. Open-Weight Model: Google Gemma
-- **Primary Inference Model**: Google's open-weight **Gemma** model (`gemma-4-26b-a4b-it`) serves as the default reasoning engine for literature synthesis, theory matching, and discussion drafting.
-- **Why Open-Weight Matters**: Because Gemma is an open-weight model family, institutions and students can run Gemma weights locally (e.g., via Ollama on consumer workstations) or access hosted endpoints without being locked into proprietary closed-model ecosystems.
+### 1. The Open-Source Agent Harness (`server.js`)
+Instead of relying on heavy closed agent frameworks or bloated multi-container microservices, AcademAI is designed as an accessible, standalone open-source harness:
+- **Domain Knowledge Engine**: Injects foundational theories (Piaget, Vygotsky, Montessori) and curriculum rubrics (STPPA, BB/MB/BSH/BSB) into the context based on user input.
+- **Pure JavaScript Math**: Implements t-tests and Hake's N-gain without external proprietary statistical packages, ensuring transparency and repeatability.
+- **DOCX Word Exporter**: Uses the open-source `docx` library to compile structured thesis drafts into standard `.docx` files for advisor review.
+- **Session Memory**: Uses isolated session identifiers to persist research documents locally in `./data/memory.json`.
 
 ### 2. Scholarly Grounding via SerpApi
 - Generic LLMs invent citations because they predict tokens without index verification.
 - We integrate **SerpApi** to query the live **Google Scholar** index, fetching real publication titles, snippets, citation counts, and direct links.
 - These verified references are injected into the agent prompt, drastically reducing the risk of phantom citations.
 
-### 3. Open-Source Agent Harness (`server.js`)
-Instead of bloated multi-container microservices, AcademAI runs as a single, lightweight Node.js service (MIT License):
-- **Domain Knowledge Engine**: Injects foundational theories (Piaget, Vygotsky, Montessori) and curriculum rubrics (STPPA, BB/MB/BSH/BSB) into the context based on user input.
-- **Error Fallback Cascade**: If the primary Gemma endpoint experiences server load or temporary rate limits, the harness automatically cascades to lightweight fallback models (`gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-3.7-flash`) so the student's late-night writing session is never abruptly halted.
-- **Pure JavaScript Math**: Implements t-tests and Hake's N-gain without external proprietary statistical packages.
-- **DOCX Word Exporter**: Uses the open-source `docx` library to compile structured thesis drafts into standard `.docx` files for advisor review.
-- **Session Memory**: Uses isolated session identifiers to persist research documents locally in `./data/memory.json`.
+### 3. AI Inference: Google Gemini with 4-Model Fallback Chain
+We utilize **Google Gemini** for its state-of-the-art academic prose and generous free tier:
+- If a model encounters a rate limit or server load during peak hours, the harness automatically cascades through fallback tiers (`gemini-3.1-flash-lite` → `gemini-3.5-flash-lite` → `gemini-3.7-flash` → `gemini-3.8-flash`) so the student's late-night writing session is never abruptly halted.
 
 ---
 
@@ -234,7 +236,7 @@ Instead of bloated multi-container microservices, AcademAI runs as a single, lig
 ### 1. Removing Financial Barriers for Developing World Students
 There are over **8 million university students across Indonesia**. Most students in regional teacher-training colleges (*LPTK*) study on budget laptops or mobile devices. 
 - Commercial AI tools charge **$20 to $30 per month** — often equivalent to several weeks of a student's living budget in regional Indonesia.
-- Open innovation — combining open-weight models like **Google Gemma**, accessible search APIs like **SerpApi**, and self-hostable MIT-licensed code — proves that state-of-the-art research support can be made freely accessible without subscription gatekeeping.
+- Open innovation — combining a lightweight MIT-licensed agent harness, accessible search APIs like **SerpApi**, and Gemini's free tier — proves that state-of-the-art research support can be made freely accessible without subscription gatekeeping.
 
 ### 2. Transparent, Defendable Academic Rigor
 In a university thesis defence, a student cannot say: *"the AI told me this was true."* They must defend their sources, explain their data, and verify their citations. 
@@ -256,7 +258,7 @@ Throughout the session, the agent and I:
 - Consolidated the prototype into a clean, standalone `server.js` agent harness to eliminate container bloat and ensure fast cold starts.
 - Connected SerpApi for live Google Scholar index querying and grounded literature injection.
 - Built and verified the pure JavaScript statistical engine for Classroom Action Research (PTK) and Hake's N-Gain formulas.
-- Configured Google Gemma as the primary open-weight engine with an automated fallback cascade.
+- Configured Google Gemini with an automated 4-model fallback cascade.
 - Packaged the application with Docker and verified the live cloud deployment on Railway with automated `/healthz` monitoring.
 
 ---
@@ -265,7 +267,6 @@ Throughout the session, the agent and I:
 
 <!-- Which partner categories are you entering?  List every one that applies, or remove this section. -->
 
-- **Best Use of Gemma**: AcademAI uses Google's open-weight **Gemma** (`gemma-4-26b-a4b-it`) as its core reasoning engine to power literature synthesis, pedagogical framework alignment (Piaget/Vygotsky/STPPA), and academic discussion drafting.
 - **Best Use of SerpApi**: AcademAI deeply integrates **SerpApi** to query the live **Google Scholar** index, grounding thesis writing in verified, peer-reviewed publications and providing students with traceable citation links.
 
 <!-- Team Submissions: Please pick one member to publish the submission and credit teammates by listing their DEV usernames directly in the body of the post. -->
