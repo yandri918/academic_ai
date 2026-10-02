@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "academai-data-viz": {
+      "command": "node",
+      "args": [
+        "./mcp/dataviz_mcp_server.js"
+      ],
+      "description": "AcademAI Data Visualization MCP Server: Generates publication-ready academic SVG/HTML charts, PTK cycle comparisons, and Mermaid research frameworks."
+    },
+    "academai-pdf-parser": {
+      "command": "node",
+      "args": [
+        "./mcp/pdf_mcp_server.js"
+      ],
+      "description": "AcademAI PDF Parser MCP Server: Extracts and ingests academic research papers directly into local research memory."
+    }
+  }
+}

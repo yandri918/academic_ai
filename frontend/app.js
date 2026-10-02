@@ -80,8 +80,28 @@ function renderMarkdown(md) {
   if (window.marked && window.DOMPurify) {
     try {
       marked.setOptions({ breaks: true, gfm: true });
-      const dirty = marked.parse(md);
-      return DOMPurify.sanitize(dirty);
+      let html = marked.parse(md);
+      
+      // Transform Mermaid blocks for dynamic rendering
+      html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/gi, (match, code) => {
+        const decoded = code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+        return `<div class="mermaid" style="background:rgba(255,255,255,0.04);padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;">${decoded}</div>`;
+      });
+
+      const sanitized = DOMPurify.sanitize(html, {
+        ADD_TAGS: ['svg', 'g', 'rect', 'line', 'text', 'title', 'circle', 'path'],
+        ADD_ATTR: ['viewBox', 'width', 'height', 'transform', 'fill', 'stroke', 'font-size', 'font-weight', 'stroke-width', 'stroke-dasharray', 'text-anchor', 'rx', 'class', 'style']
+      });
+
+      setTimeout(() => {
+        if (window.mermaid) {
+          try {
+            mermaid.run({ querySelector: '.mermaid' });
+          } catch(e) {}
+        }
+      }, 120);
+
+      return sanitized;
     } catch (e) { /* fallback */ }
   }
   // Fallback: basic linebreak handling

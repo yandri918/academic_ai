@@ -1166,6 +1166,38 @@ app.post('/api/generate', handleGeneration);
 app.post('/api/validate', handleCitationValidator);
 app.post('/api/plagiarism/check', handlePlagiarismCheck);
 
+// Data Visualization PTK Endpoint
+app.post('/api/viz/ptk', (req, res) => {
+  try {
+    const { variableName = 'Motorik Halus Anak', praSiklus, siklus1, siklus2, targetKetuntasan = 75 } = req.body;
+    if (!praSiklus || !siklus1 || !siklus2) {
+      return res.status(400).json({ success: false, error: 'Data praSiklus, siklus1, dan siklus2 wajib diisi.' });
+    }
+    const tuntasPra = (praSiklus.BSH || 0) + (praSiklus.BSB || 0);
+    const tuntasS1  = (siklus1.BSH || 0) + (siklus1.BSB || 0);
+    const tuntasS2  = (siklus2.BSH || 0) + (siklus2.BSB || 0);
+    const narrative = `### Hasil Capaian PTK: ${variableName}\n` +
+      `- **Pra-Siklus**: Ketuntasan klasikal ${tuntasPra.toFixed(1)}%\n` +
+      `- **Siklus I**: Ketuntasan klasikal meningkat menjadi ${tuntasS1.toFixed(1)}%\n` +
+      `- **Siklus II**: Ketuntasan klasikal mencapai ${tuntasS2.toFixed(1)}% (Target >= ${targetKetuntasan}% : ${tuntasS2 >= targetKetuntasan ? 'TERCAPAI' : 'BELUM TERCAPAI'})`;
+
+    res.json({
+      success: true,
+      variableName,
+      ketuntasanKlasikal: {
+        praSiklus: `${tuntasPra.toFixed(1)}%`,
+        siklus1: `${tuntasS1.toFixed(1)}%`,
+        siklus2: `${tuntasS2.toFixed(1)}%`,
+        target: `${targetKetuntasan}%`,
+        isPassing: tuntasS2 >= targetKetuntasan
+      },
+      narrative
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Export DOCX Endpoints
 app.post('/api/export/docx', async (req, res) => {
   try {
