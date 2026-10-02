@@ -951,7 +951,7 @@ async function saveCurrentOutputToMemory() {
   }
 
   const topicInput = document.getElementById('gen-topic');
-  const title = (topicInput && topicInput.value.trim()) || 'Draf Artikel Lengkap S1 PAUD';
+  const title = (topicInput && topicInput.value.trim()) || 'Draf Artikel Ilmiah Lengkap';
 
   try {
     const res = await fetch(CONFIG.MEMORY_API, {
@@ -1398,7 +1398,7 @@ function loadSampleStatsData() {
   if (preInput) preInput.value = '52, 56, 60, 48, 55, 62, 58, 50, 64, 58, 54, 60, 52, 65, 50, 58, 62, 55, 50, 60';
   if (postInput) postInput.value = '82, 85, 90, 78, 84, 92, 86, 80, 94, 88, 82, 90, 80, 95, 78, 86, 90, 85, 76, 88';
 
-  toast('Contoh data PAUD (N=20) berhasil dimuat!', 'info', 2000);
+  toast('Contoh data pretest-posttest (N=20) berhasil dimuat!', 'info', 2000);
 }
 
 async function runStatsCalculation() {

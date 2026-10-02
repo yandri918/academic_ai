@@ -1,0 +1,245 @@
+{
+  "name": "AcademAI — Thesis & Early Childhood Education Copilot (Gemma 2 Edition)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "academ-ai",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n1_webhook",
+      "name": "🚀 Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "academ-ai-main"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || $json;\nconst sessionId = body.sessionId || `academ_${Date.now()}_${Math.random().toString(36).substr(2,8)}`;\nconst action = body.action || 'chat';\nconst mode = body.mode || 'drafting';\nconst discipline = body.discipline || 'paud';\nconst outputFormat = body.outputFormat || 'markdown';\nconst citationFormat = body.citationFormat || 'APA7';\nconst language = body.language || 'indonesia';\n\nreturn {\n  sessionId, action, mode, discipline,\n  outputFormat, citationFormat, language,\n  userMessage: body.message || body.query || '',\n  targetSection: body.section || null,\n  researchTopic: body.topic || null,\n  journalCount: body.options?.journalCount || 10,\n  yearFilter: body.options?.yearFilter || '2019-2025',\n  runCitationValidator: body.options?.runCitationValidator !== false,\n  hasUploadedData: body.hasUploadedData || false,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "n2_parser",
+      "name": "📋 Parse & Validate Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "generate_full", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "generate_full"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "validate_citations", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "validate_citations"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "upload", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "upload"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "export", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "export"
+            },
+            {
+              "conditions": { "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "reset", "operator": { "type": "string", "operation": "equals" } } ] },
+              "renameOutput": true, "outputKey": "reset"
+            }
+          ]
+        },
+        "fallbackOutput": "extra"
+      },
+      "id": "n3_router",
+      "name": "🔀 Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const mode = $json.mode || 'drafting';\nconst discipline = $json.discipline || 'paud';\nconst language = $json.language || 'indonesia';\nconst citationFormat = $json.citationFormat || 'APA7';\n\nconst modePrompts = {\n  drafting: `Tulis konten ilmiah akademik yang lengkap, pedagogis, dan terstruktur. Gunakan tool Semantic Scholar untuk referensi jurnal ilmiah pendidikan. Sertakan sitasi (Nama, Tahun) pada setiap klaim teori perkembangan anak atau data lapangan. Format Markdown rapi.`,\n  editing: `Review dan perbaiki draft skripsi/karya ilmiah. Periksa kejelasan logika pedagogis, terminologi perkembangan anak (kognitif, motorik halus/kasar, afektif, sosio-emosional), konsistensi sitasi, dan bahasa baku sesuai PUEBI/EYD V.`,\n  paraphrasing: `Parafrase teks akademik teori/jurnal tanpa mengubah esensi ilmiahnya untuk menghindari plagiarisme/Turnitin. Pertahankan sitasi primer.`,\n  SLR: `Lakukan Systematic Literature Review (SLR) pada topik PAUD/pendidikan terkait. Cari 10-15 jurnal di Semantic Scholar. Buat tabel matrik penelitian terdahulu (Peneliti, Tahun, Variabel/Fokus, Metode/Sampel Anak Usia Dini, Hasil Utama, Research Gap).`,\n  proposal: `Rancang proposal skripsi lengkap: Judul Penelitian, BAB I (Latar Belakang masalah di TK/PAUD, Rumusan Masalah, Tujuan, Manfaat), BAB II (Kajian Teori: teori perkembangan anak/media pembelajaran APE, Kerangka Berpikir, Hipotesis Tindakan/Asumsi), BAB III (Metodologi Penelitian: PTK / Kuantitatif / Kualitatif Deskriptif, Subjek Anak Didik, Instrumen Observasi).`,\n  abstract: `Buat Abstrak bilingual (Indonesia & Inggris) 150-200 kata mencakup: Latar belakang singkat di satuan PAUD, Tujuan, Metode & Instrumen pengamatan, Temuan kunci perkembangan anak, dan Kesimpulan/Implikasi pedagogis. 3-5 Kata Kunci.`,\n  statistics: `Interpretasikan hasil pengolahan data penelitian pendidikan (misal: uji efektivitas media APE, uji-t, N-Gain, lembar observasi persentase ketercapaian aspek perkembangan anak). Jelaskan implikasi praktis bagi guru/pendidik anak usia dini.`\n};\n\nconst modeTemp = {\n  drafting: 0.3, editing: 0.2, paraphrasing: 0.6,\n  SLR: 0.2, proposal: 0.3, abstract: 0.3, statistics: 0.2\n};\n\nreturn {\n  ...$json,\n  modePrompt: modePrompts[mode] || modePrompts.drafting,\n  temperature: modeTemp[mode] || 0.3,\n  modeLabel: mode.toUpperCase()\n};"
+      },
+      "id": "n4_mode_selector",
+      "name": "⚙️ Mode Selector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 180]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const topic = $json.researchTopic || $json.userMessage;\nconst journalCount = $json.journalCount || 10;\nconst yearFilter = $json.yearFilter || '2019-2025';\n\nconst sections = [\n  { id: 'research_phase', label: '🔍 Research & Journal Mining', mode: 'drafting',\n    prompt: `Cari ${journalCount} jurnal peer-reviewed relevan tentang: \"${topic}\" dari Semantic Scholar (${yearFilter}). Utamakan jurnal pendidikan/anak usia dini. Rangkum teori kunci untuk dipakai di seluruh bab.` },\n  { id: 'abstrak', label: '📄 Abstrak (Bilingual)', mode: 'abstract',\n    prompt: `Buat draf abstrak Indonesia & Inggris lengkap dengan kata kunci untuk penelitian: \"${topic}\".` },\n  { id: 'bab1', label: '📖 BAB I — Pendahuluan', mode: 'drafting',\n    prompt: `Tulis BAB I Pendahuluan lengkap untuk: \"${topic}\". Sertakan 1.1 Latar Belakang (kondisi ideal vs realitas di lapangan PAUD, data empiris), 1.2 Identifikasi & Pembatasan Masalah, 1.3 Rumusan Masalah, 1.4 Tujuan, 1.5 Manfaat bagi Pendidik, Anak, & Sekolah.` },\n  { id: 'bab2', label: '📚 BAB II — Kajian Pustaka', mode: 'SLR',\n    prompt: `Tulis BAB II Kajian Teori untuk: \"${topic}\". Bahas teori perkembangan anak yang relevan (Piaget, Vygotsky, dsb), variabel media/stimulasi, penelitian terdahulu (tabel sintesis), kerangka berpikir, dan hipotesis.` },\n  { id: 'bab3', label: '⚙️ BAB III — Metode Penelitian', mode: 'drafting',\n    prompt: `Tulis BAB III Metode Penelitian untuk: \"${topic}\". Tentukan jenis metode (PTK/Kualitatif/Eksperimen), subjek anak didik usia 4-6 tahun, teknik observasi/dokumentasi, kisi-kisi instrumen, dan teknik analisis data.` },\n  { id: 'bab4', label: '📊 BAB IV — Hasil & Pembahasan', mode: 'drafting',\n    prompt: `Tulis BAB IV Hasil Penelitian dan Pembahasan untuk: \"${topic}\". Sajikan deskripsi data perkembangan anak, siklus/analisis, komparasi dengan penelitian terdahulu, dan refleksi pedagogis.` },\n  { id: 'bab5', label: '🏁 BAB V — Kesimpulan & Saran', mode: 'drafting',\n    prompt: `Tulis BAB V Kesimpulan dan Saran rekomendasi praktis bagi guru PAUD, orang tua, dan pengambil kebijakan kurikulum.` },\n  { id: 'daftar_pustaka', label: '📑 Daftar Pustaka (APA 7th)', mode: 'drafting',\n    prompt: `Susun Daftar Pustaka format APA 7th Edition alfabetis lengkap dari semua referensi yang disitasi.` }\n];\n\nreturn {\n  ...$json,\n  sections,\n  totalSections: sections.length,\n  currentIndex: 0,\n  completedSections: [],\n  startedAt: new Date().toISOString()\n};"
+      },
+      "id": "n5_auto_gen",
+      "name": "🤖 Auto Section Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const content = $json.content || $json.userMessage || '';\nconst API_BASE = 'https://api.semanticscholar.org/graph/v1';\nconst API_KEY = $env.SEMANTIC_SCHOLAR_API_KEY || '';\nconst headers = API_KEY ? { 'x-api-key': API_KEY } : {};\n\nconst apaPattern = /\\(([A-Z][a-zA-Z\\u00C0-\\u024F]+(?:(?:\\s+&\\s+|\\s+et\\s+al\\.)?(?:\\s*[A-Z][a-zA-Z]+)*)?),?\\s*(\\d{4})\\)/g;\nconst doiPattern = /(?:https?:\\/\\/doi\\.org\\/|doi:\\s*)(10\\.\\d{4,}\\/\\S+)/gi;\n\nconst citations = [];\nlet m;\n\nwhile ((m = apaPattern.exec(content)) !== null) {\n  citations.push({ type: 'APA', author: m[1].trim(), year: m[2], raw: m[0] });\n}\nwhile ((m = doiPattern.exec(content)) !== null) {\n  citations.push({ type: 'DOI', doi: m[1], raw: m[0] });\n}\n\nif (citations.length === 0) {\n  return { validationReport: '⚠️ Tidak ditemukan sitasi dalam format APA atau DOI pada teks.', summary: { total: 0, valid: 0, partial: 0, invalid: 0 }, allValid: true };\n}\n\nconst results = [];\nfor (const cite of citations.slice(0, 15)) {\n  let status = 'UNKNOWN';\n  let found = null;\n  let suggestion = null;\n  try {\n    if (cite.type === 'DOI') {\n      const r = await fetch(`${API_BASE}/paper/DOI:${cite.doi}?fields=title,authors,year,journal`, { headers });\n      if (r.ok) { found = await r.json(); status = 'VALID'; }\n      else { status = 'INVALID'; suggestion = 'DOI tidak terdaftar.'; }\n    } else {\n      const q = encodeURIComponent(`${cite.author} ${cite.year}`);\n      const r = await fetch(`${API_BASE}/paper/search?query=${q}&fields=title,authors,year,journal&limit=3`, { headers });\n      if (r.ok) {\n        const data = await r.json();\n        const papers = data.data || [];\n        const yearMatch = papers.filter(p => String(p.year) === String(cite.year));\n        if (yearMatch.length > 0) { found = yearMatch[0]; status = 'VALID'; }\n        else if (papers.length > 0) { found = papers[0]; status = 'PARTIAL'; suggestion = `Tahun berbeda: tercatat ${papers[0].year}.`; }\n        else { status = 'INVALID'; suggestion = 'Tidak ditemukan di database Semantic Scholar.'; }\n      }\n    }\n  } catch(e) { status = 'ERROR'; suggestion = e.message; }\n  results.push({ raw: cite.raw, type: cite.type, status, foundTitle: found?.title, foundYear: found?.year, foundJournal: found?.journal?.name, suggestion });\n}\n\nconst icons = { VALID:'✅', PARTIAL:'⚠️', INVALID:'❌', ERROR:'🔴', UNKNOWN:'❓' };\nconst report = results.map(r => {\n  let line = `${icons[r.status]} ${r.raw} → ${r.status}`;\n  if (r.foundTitle) line += `\\n   📄 \"${r.foundTitle}\" (${r.foundYear}) — ${r.foundJournal || 'Jurnal Terindeks'}`;\n  if (r.suggestion) line += `\\n   💡 Catatan: ${r.suggestion}`;\n  return line;\n}).join('\\n\\n');\n\nconst valid = results.filter(r=>r.status==='VALID').length;\nconst partial = results.filter(r=>r.status==='PARTIAL').length;\nconst invalid = results.filter(r=>r.status==='INVALID').length;\n\nreturn {\n  validationReport: `📋 LAPORAN VALIDASI SITASI AKADEMIK\\n${'='.repeat(45)}\\n${report}\\n\\n📊 Total: ${results.length} sitasi | ✅ ${valid} valid | ⚠️ ${partial} perlu koreksi | ❌ ${invalid} tidak ditemukan`,\n  summary: { total: results.length, valid, partial, invalid },\n  allValid: invalid === 0\n};"
+      },
+      "id": "n6_citation_validator",
+      "name": "🔍 Citation Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 420]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('📋 Parse & Validate Request').item.json.sessionId }}",
+        "contextWindowLength": 25
+      },
+      "id": "n7_memory",
+      "name": "💾 Session Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1080, 520]
+    },
+    {
+      "parameters": {
+        "model": "gemma2:9b",
+        "options": {
+          "temperature": "={{ $('⚙️ Mode Selector').item?.json?.temperature || 0.3 }}"
+        }
+      },
+      "id": "n8_gemma",
+      "name": "💎 Google Gemma 2 (Open-Weight Model)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [1080, 300],
+      "credentials": {
+        "ollamaApi": {
+          "id": "ollama_cred",
+          "name": "Ollama Local (Gemma 2)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "semantic_scholar_search",
+        "description": "Cari jurnal dan artikel ilmiah pendidikan & perkembangan anak peer-reviewed dari database terbuka Semantic Scholar (200 juta+ publikasi). Tulis query dalam bahasa INGGRIS untuk hasil terbaik. Contoh: 'early childhood education manipulative media play based learning Indonesia'",
+        "jsCode": "const query = $fromAI('query', 'Search query in English');\nconst limit = $fromAI('limit', 'Number of results (default 10, max 20)', 'number') || 10;\nconst yearFilter = $fromAI('year_filter', 'Year filter like 2019-2025', 'string') || '';\nconst API_KEY = $env.SEMANTIC_SCHOLAR_API_KEY || '';\nconst headers = API_KEY ? { 'x-api-key': API_KEY } : {};\nconst fields = 'title,authors,year,abstract,citationCount,externalIds,journal,fieldsOfStudy';\nlet url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&fields=${fields}&limit=${Math.min(limit, 20)}`;\nif (yearFilter) url += `&year=${yearFilter}`;\ntry {\n  const r = await fetch(url, { headers });\n  if (!r.ok) return `Error: ${r.status} ${r.statusText}`;\n  const data = await r.json();\n  if (!data.data?.length) return `Tidak ditemukan paper untuk: \"${query}\".`;\n  const papers = data.data.map((p, i) => {\n    const authors = p.authors?.slice(0,3).map(a=>a.name).join(', ') + (p.authors?.length>3?' et al.':'');\n    const doi = p.externalIds?.DOI;\n    const abstract = p.abstract?.substring(0,350) || 'Abstrak tidak tersedia';\n    const apa = doi ? `${authors} (${p.year}). ${p.title}. *${p.journal?.name||''}*. https://doi.org/${doi}` : `${authors} (${p.year}). ${p.title}. *${p.journal?.name||''}*.`;\n    return `[${i+1}] **${p.title}**\\n    Penulis: ${authors} (${p.year})\\n    Jurnal: ${p.journal?.name||'N/A'}\\n    Sitasi: ${p.citationCount||0}x | DOI: ${doi?`https://doi.org/${doi}`:'N/A'}\\n    Abstrak: ${abstract}...\\n    📌 Format APA: ${apa}`;\n  }).join('\\n\\n');\n  return `Ditemukan ${data.data.length} paper untuk \"${query}\":\\n\\n${papers}`;\n} catch(e) { return `Error: ${e.message}`; }"
+      },
+      "id": "n9_semantic_tool",
+      "name": "📖 Semantic Scholar Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [860, 520]
+    },
+    {
+      "parameters": {
+        "name": "duckduckgo_search",
+        "description": "Cari data kurikulum terkini, regulasi Kemendikbudristek (Kurikulum Merdeka PAUD), standar pencapaian perkembangan anak (STPPA Permendikbud), atau data observasi pendidikan.",
+        "method": "GET",
+        "url": "https://api.duckduckgo.com/",
+        "sendQuery": true,
+        "parametersQuery": {
+          "values": [
+            { "name": "q", "value": "={{ $fromAI('search_query', 'Search query in Indonesian') }}" },
+            { "name": "format", "value": "json" },
+            { "name": "no_html", "value": "1" },
+            { "name": "skip_disambig", "value": "1" }
+          ]
+        }
+      },
+      "id": "n10_ddg_tool",
+      "name": "🦆 DuckDuckGo Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1080, 620]
+    },
+    {
+      "parameters": {
+        "agentType": "toolsAgent",
+        "options": {
+          "maxIterations": 10,
+          "returnIntermediateSteps": false,
+          "systemMessage": "Kamu adalah AcademAI (Gemma 2 Edition) — Asisten Ahli Penulisan Skripsi & Karya Ilmiah Pendidikan, khususnya Pendidikan Anak Usia Dini (PAUD) dan Ilmu Pendidikan.\n\nTUGAS UTAMA:\nMembantu mahasiswa menyelesaikan draf skripsi berkualitas tinggi dengan menjaga integritas akademik, grounding teori yang kuat, dan privasi data anak didik.\n\nFONDASI TEORI PAUD & PENDIDIKAN:\n- Teori Perkembangan Kognitif (Jean Piaget), Konstruktivisme Sosial (Lev Vygotsky), Pembelajaran Sensori/Montessori, Filosofi Pendidikan Among (Ki Hajar Dewantara).\n- 6 Aspek Perkembangan Anak: Nilai Agama & Moral, Fisik-Motorik, Kognitif, Bahasa, Sosial-Emosional, dan Seni (STPPA).\n- Media Pembelajaran: APE (Alat Permainan Edukatif), Loose Parts, Multisensori, Media Konkret.\n\nATURAN AKADEMIK:\n1. Setiap argumen teoretis wajib disertai sitasi nyata (Nama, Tahun) via semantic_scholar_search.\n2. PRIVASI ANAK DIDIK: Jangan pernah meminta atau mencatat nama asli anak, gunakan inisial (misal: An. A, An. B) demi kode etik perlindungan privasi anak.\n3. Bahasa Indonesia formal akademik, terstruktur, berbasis bukti (evidence-based pedagogy).\n4. Format output: Markdown rapi dengan heading hierarkis.\n\nSession: {{ $('📋 Parse & Validate Request').item.json.sessionId }} | Topik: {{ $('📋 Parse & Validate Request').item.json.researchTopic || 'Skripsi PAUD' }}\nMODE: {{ $('⚙️ Mode Selector').item?.json?.modeLabel || 'DRAFTING' }}\nINSTRUKSI MODE: {{ $('⚙️ Mode Selector').item?.json?.modePrompt || 'Tulis draf akademik yang mendalam.' }}"
+        }
+      },
+      "id": "n11_agent",
+      "name": "🧠 AcademAI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const output = $json.output || $json.text || '';\nconst req = $('📋 Parse & Validate Request').item.json;\nconst date = new Date().toLocaleDateString('id-ID', { year:'numeric', month:'long', day:'numeric' });\nconst header = `---\\nProject: AcademAI (Built with Gemma 2 Open-Weight AI)\\nFokus: Pendidikan Anak Usia Dini (PAUD) & Ilmu Pendidikan\\nMode: ${req.mode?.toUpperCase() || 'DRAFTING'}\\nSession: ${req.sessionId}\\nSitasi: ${req.citationFormat} | Tanggal: ${date}\\n---\\n\\n`;\nconst footer = `\\n\\n---\\n> 🧸 **AcademAI EduFriend Note**: Selalu konsultasikan hasil draf ini dengan dosen pembimbing skripsi Anda. Data observasi anak didik tetap 100% aman dan terjaga secara lokal.`;\nreturn { documentMarkdown: header + output + footer, wordCount: output.split(/\\s+/).length, sessionId: req.sessionId, outputFormat: req.outputFormat, mode: req.mode, timestamp: new Date().toISOString() };"
+      },
+      "id": "n12_assembler",
+      "name": "📝 Document Assembler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const doc = $json;\nreturn {\n  success: true,\n  sessionId: doc.sessionId,\n  mode: doc.mode,\n  document: {\n    content: doc.documentMarkdown,\n    wordCount: doc.wordCount,\n    format: 'markdown',\n    generatedAt: doc.timestamp\n  },\n  message: `✅ Draf skripsi berhasil dibuat (${doc.wordCount} kata, mode: ${doc.mode})`,\n  nextSteps: [\n    'Gunakan action: validate_citations untuk verifikasi keaslian sitasi',\n    'Ekspor dokumen ke PDF/DOCX via Gotenberg',\n    'Lanjutkan ke bab berikutnya menggunakan session yang sama'\n  ],\n  meta: { model: 'gemma2:9b (open-weight)', engine: 'Ollama / Open-Source Agent Harness', poweredBy: 'AcademAI v2.0' }\n};"
+      },
+      "id": "n13_response_builder",
+      "name": "📤 Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "X-Powered-By", "value": "AcademAI-Gemma2" }
+            ]
+          }
+        }
+      },
+      "id": "n14_response",
+      "name": "✅ Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1960, 300]
+    }
+  ],
+  "connections": {
+    "🚀 Webhook Trigger": { "main": [[{ "node": "📋 Parse & Validate Request", "type": "main", "index": 0 }]] },
+    "📋 Parse & Validate Request": { "main": [[{ "node": "🔀 Action Router", "type": "main", "index": 0 }]] },
+    "🔀 Action Router": {
+      "main": [
+        [{ "node": "🤖 Auto Section Generator", "type": "main", "index": 0 }],
+        [{ "node": "🔍 Citation Validator", "type": "main", "index": 0 }],
+        [{ "node": "📝 Document Assembler", "type": "main", "index": 0 }],
+        [{ "node": "📤 Build Response", "type": "main", "index": 0 }],
+        [{ "node": "📤 Build Response", "type": "main", "index": 0 }],
+        [{ "node": "⚙️ Mode Selector", "type": "main", "index": 0 }]
+      ]
+    },
+    "⚙️ Mode Selector": { "main": [[{ "node": "🧠 AcademAI Agent", "type": "main", "index": 0 }]] },
+    "🤖 Auto Section Generator": { "main": [[{ "node": "🧠 AcademAI Agent", "type": "main", "index": 0 }]] },
+    "🔍 Citation Validator": { "main": [[{ "node": "📤 Build Response", "type": "main", "index": 0 }]] },
+    "💾 Session Memory": { "ai_memory": [[{ "node": "🧠 AcademAI Agent", "type": "ai_memory", "index": 0 }]] },
+    "💎 Google Gemma 2 (Open-Weight Model)": { "ai_languageModel": [[{ "node": "🧠 AcademAI Agent", "type": "ai_languageModel", "index": 0 }]] },
+    "📖 Semantic Scholar Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 0 }]] },
+    "🦆 DuckDuckGo Tool": { "ai_tool": [[{ "node": "🧠 AcademAI Agent", "type": "ai_tool", "index": 1 }]] },
+    "🧠 AcademAI Agent": { "main": [[{ "node": "📝 Document Assembler", "type": "main", "index": 0 }]] },
+    "📝 Document Assembler": { "main": [[{ "node": "📤 Build Response", "type": "main", "index": 0 }]] },
+    "📤 Build Response": { "main": [[{ "node": "✅ Send Response", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "tags": ["hacktoberfest", "gemma2", "open-source-ai", "education", "paud", "thesis"],
+  "meta": { "instanceId": "academ-ai-gemma2" }
+}

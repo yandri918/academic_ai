@@ -139,9 +139,9 @@ function clearSessionMemory(sessionId) {
 app.get('/healthz', (req, res) => {
   res.json({
     status: 'ok',
-    server: 'AcademAI Direct Academic Engine',
-    discipline: 'S1 PAUD & Academic Research',
-    features: ['memory_context', 'pdf_parser', 'plagiarism_checker', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator'],
+    server: 'AcademAI Universal Academic Engine',
+    discipline: 'Universal Academic Research (Multi-Disciplinary)',
+    features: ['memory_context', 'pdf_parser', 'plagiarism_checker', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator', 'academic_stats', 'dataviz_mcp'],
     models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-3.8-flash']
   });
 });
@@ -316,15 +316,15 @@ async function searchGoogleScholar(query, limit = 8) {
 async function saveToZotero(paper) {
   const apiKey = process.env.ZOTERO_API_KEY;
   const userId = process.env.ZOTERO_USER_ID || '21617488';
-  const collectionId = '6FJX4FDT'; // Skripsi S1 PAUD
+  const collectionId = '6FJX4FDT'; // Zotero Academic Research Collection
 
   if (!apiKey || !userId) return null;
 
   try {
     const item = [{
       itemType: 'journalArticle',
-      title: paper.title || 'Paper Riset Ilmiah PAUD',
-      publicationTitle: paper.journal || 'Jurnal Pendidikan Anak Usia Dini (SINTA Terakreditasi)',
+      title: paper.title || 'Paper Riset Ilmiah AcademAI',
+      publicationTitle: paper.journal || 'Jurnal Ilmiah Akademik Terakreditasi',
       date: String(paper.year || new Date().getFullYear()),
       DOI: paper.doi || '',
       url: paper.link || '',
@@ -332,9 +332,8 @@ async function saveToZotero(paper) {
       collections: [collectionId],
       tags: [
         { tag: 'AcademAI' },
-        { tag: 'Skripsi-PAUD' },
-        { tag: 'Google-Scholar' },
-        { tag: 'S1-PAUD-Reference' }
+        { tag: 'Academic-Research' },
+        { tag: 'Google-Scholar' }
       ]
     }];
 
@@ -416,41 +415,238 @@ async function callGemini(systemPrompt, userPrompt) {
   throw new Error(`Semua endpoint model Gemini sedang sibuk. ${lastError ? lastError.message : ''}`);
 }
 
-// Comprehensive Core Academic System Prompt
+// ─── DISCIPLINES REGISTRY ────────────────────────────────────────────────────
+const DISCIPLINES = {
+  general_academic: {
+    name: 'Akademik Umum / Lintas Disiplin',
+    searchSuffix: 'jurnal ilmiah akademik penelitian',
+    persona: 'Co-Pilot Riset Akademik Universal untuk mahasiswa S1/S2/S3 dan peneliti dari berbagai bidang ilmu di Indonesia',
+    theoryGuide: `2. Kerangka Teoretis Lintas Disiplin:
+   - Filsafat Ilmu: Ontologi, Epistemologi, dan Aksiologi sebagai fondasi keilmuan.
+   - Teori Konstruktivis (Piaget, Vygotsky) dan Positivisme (Comte, Popper) untuk landasan metodologi.
+   - Paradigma Penelitian: Kuantitatif (positivisme), Kualitatif (interpretivisme), Mixed Methods.
+   - Etika Penelitian Ilmiah dan Integritas Akademik (menghindari plagiarisme, fabrikasi data).`,
+    methodGuide: `3. Metodologi Penelitian Umum:
+   - Kuantitatif: Survei, Eksperimen, Quasi-Eksperimen (Pre-test/Post-test, Control Group).
+   - Kualitatif: Studi Kasus, Fenomenologi, Grounded Theory, Etnografi.
+   - Mixed Methods: Explanatory Sequential, Exploratory Sequential, Concurrent Triangulation.
+   - Analisis Data: Statistik deskriptif & inferensial (SPSS/AMOS), tematik & koding induktif/deduktif.
+   - Systematic Literature Review (SLR) & Meta-Analisis mengikuti protokol PRISMA.`
+  },
+  education: {
+    name: 'Ilmu Pendidikan',
+    searchSuffix: 'jurnal pendidikan ilmu pendidikan pembelajaran',
+    persona: 'Co-Pilot Riset Ilmu Pendidikan dan Keguruan untuk mahasiswa S1 PGSD, PGMI, dan program studi pendidikan lainnya',
+    theoryGuide: `2. Teori Pokok Ilmu Pendidikan:
+   - Teori Belajar Behaviorisme (Skinner, Pavlov): Stimulus-respons, penguatan, conditioning.
+   - Teori Belajar Kognitif (Piaget, Bruner, Ausubel): Konstruksi pengetahuan, advance organizer.
+   - Teori Pembelajaran Sosial (Bandura): Observasional learning, efikasi diri.
+   - Kurikulum Merdeka Belajar: Profil Pelajar Pancasila, Projek Penguatan Profil Pelajar Pancasila (P5).
+   - Model Pembelajaran Inovatif: PBL, PjBL, Discovery Learning, Cooperative Learning, Flipped Classroom.`,
+    methodGuide: `3. Metodologi Penelitian Pendidikan:
+   - PTK (Penelitian Tindakan Kelas) model Kemmis & McTaggart / DDAER (Kurt Lewin).
+   - R&D (Research & Development): Model ADDIE, Dick & Carey, 4D Thiagarajan.
+   - Eksperimen / Quasi-Eksperimen (Nonequivalent Control Group Design).
+   - Instrumen: Tes Hasil Belajar, Lembar Observasi, Angket, Skala Likert, Rubrik Penilaian.`
+  },
+  paud: {
+    name: 'Pendidikan Anak Usia Dini (PAUD)',
+    searchSuffix: 'pendidikan anak usia dini jurnal PAUD',
+    persona: 'Co-Pilot Riset Skripsi S1 PAUD dan Ilmu Keguruan Anak Usia Dini Terkemuka di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok PAUD:
+   - Teori Perkembangan Kognitif Jean Piaget (Tahap Pra-operasional 2–7 tahun: berpikir simbolik, egosentrisme, manipulasi objek konkret).
+   - Teori Konstruktivisme Sosial Lev Vygotsky (ZPD, Scaffolding, bahasa sebagai instrumen berpikir).
+   - Pendekatan Maria Montessori (Periode sensitif, prepared environment, auto-education, media sensorik).
+   - Filosofi Ki Hajar Dewantara (Sistem Among: Ing Ngarso Sung Tulodo, Ing Madyo Mangun Karso, Tut Wuri Handayani; Tri Sentra Pendidikan).
+   - STPPA (Permendikbudristek No. 5 Tahun 2022): 6 Aspek (Nilai Agama & Moral, Fisik-Motorik, Kognitif, Bahasa, Sosial-Emosional, Seni).
+   - Media Loose Parts & APE: bahan terbuka alam & sintetis untuk HOTS anak usia dini.`,
+    methodGuide: `3. Metodologi Penelitian Skripsi PAUD:
+   - PTK model siklus Kemmis & McTaggart: Planning, Acting, Observing, Reflecting (2 Siklus).
+   - Eksperimen / Quasi-Experiment dengan Pretest-Posttest.
+   - Rubrik Penilaian Standar Nasional PAUD: BB (1), MB (2), BSH (3), BSB (4).
+   - Indikator Keberhasilan Tindakan: Ketuntasan klasikal minimal >= 75–80% pada kriteria BSH/BSB.
+   - Latar Belakang Piramida Terbalik: Makro (Kurikulum Merdeka PAUD / STPPA) → Meso (satuan PAUD/TK) → Mikro (masalah konkret di kelas).`
+  },
+  economics: {
+    name: 'Ekonomi & Bisnis',
+    searchSuffix: 'jurnal ekonomi bisnis manajemen keuangan',
+    persona: 'Co-Pilot Riset Ilmu Ekonomi, Manajemen, Akuntansi, dan Bisnis untuk mahasiswa S1/S2 di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Ekonomi & Bisnis:
+   - Teori Perilaku Konsumen (Kotler & Keller): Faktor budaya, sosial, pribadi, psikologis.
+   - Teori Motivasi (Herzberg, Maslow, McClelland): Aplikasi pada perilaku organisasi.
+   - Teori Agensi (Jensen & Meckling): Asimetri informasi, principal-agent dalam tata kelola perusahaan.
+   - Teori Sinyal (Spence): Informasi pasar dan keputusan investasi.
+   - Balanced Scorecard (Kaplan & Norton): Perspektif keuangan, pelanggan, proses internal, pembelajaran.
+   - Analisis SWOT, Porter's Five Forces, Value Chain Analysis.`,
+    methodGuide: `3. Metodologi Penelitian Ekonomi & Bisnis:
+   - Kuantitatif: Regresi Linear/Berganda, Regresi Logistik, SEM (Structural Equation Modeling), Path Analysis.
+   - Deskriptif Kuantitatif: Survei dengan kuesioner (Skala Likert 1–5), uji validitas & reliabilitas.
+   - Kualitatif: Studi Kasus, Wawancara Mendalam, Analisis Dokumen (Annual Report, Laporan Keuangan).
+   - Uji Asumsi Klasik: Normalitas, Multikolinieritas, Heteroskedastisitas, Autokorelasi.
+   - Alat Analisis: SPSS, Eviews, SmartPLS, AMOS.`
+  },
+  computer_science: {
+    name: 'Ilmu Komputer & Teknik Informatika',
+    searchSuffix: 'jurnal ilmu komputer informatika teknologi informasi',
+    persona: 'Co-Pilot Riset Ilmu Komputer, Sistem Informasi, dan Teknik Informatika untuk mahasiswa dan peneliti teknologi di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Ilmu Komputer:
+   - Model Waterfall, Agile (Scrum/Kanban), Spiral: Metodologi pengembangan perangkat lunak.
+   - Machine Learning & AI: Supervised, Unsupervised, Reinforcement Learning; Neural Network & Deep Learning.
+   - Arsitektur Sistem: Client-Server, Microservices, SOA, REST API, GraphQL.
+   - Basis Data: Relasional (SQL), NoSQL (MongoDB, Redis), Data Warehouse, ETL.
+   - Keamanan Siber: CIA Triad (Confidentiality, Integrity, Availability), OWASP Top 10, enkripsi.`,
+    methodGuide: `3. Metodologi Penelitian Ilmu Komputer:
+   - R&D (Prototype/Iterative): Model Waterfall, SDLC (System Development Life Cycle).
+   - Eksperimental: Pengujian kinerja sistem (benchmarking), akurasi model ML (confusion matrix, F1-score, AUC-ROC).
+   - Studi Kasus: Analisis sistem existing, perancangan ulang berbasis kebutuhan pengguna (UX Research).
+   - Pengujian: Black-Box Testing, White-Box Testing, User Acceptance Testing (UAT).
+   - Metrik Evaluasi: Precision, Recall, RMSE, MAE, Response Time, Throughput.`
+  },
+  engineering: {
+    name: 'Teknik & Teknologi',
+    searchSuffix: 'jurnal teknik teknologi rekayasa engineering',
+    persona: 'Co-Pilot Riset Teknik Sipil, Mesin, Elektro, Kimia, Industri, dan bidang rekayasa lainnya untuk mahasiswa S1/S2 di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Teknik:
+   - Mekanika Bahan & Kekuatan Material: Tegangan, Regangan, Modulus Elastisitas, Faktor Keamanan.
+   - Termodinamika: Hukum I & II, Siklus Carnot, Efisiensi Termal.
+   - Elektromagnetika (Maxwell): Medan listrik, medan magnet, induksi, gelombang EM.
+   - Kontrol Otomatis: Sistem umpan balik (PID Controller), transfer function, kestabilan sistem.
+   - Lean Manufacturing & Six Sigma: DMAIC, value stream mapping, efisiensi produksi.`,
+    methodGuide: `3. Metodologi Penelitian Teknik:
+   - Eksperimental: Perancangan percobaan (DOE – Design of Experiment), analisis variansi (ANOVA).
+   - Simulasi: FEM (Finite Element Method) dengan ANSYS/Abaqus; simulasi CFD.
+   - Studi Kasus & Observasi Lapangan: Pengukuran parameter teknis, analisis kegagalan.
+   - Optimasi: Linear Programming, Algoritma Genetika, Particle Swarm Optimization.
+   - Analisis Statistik: Uji t, ANOVA, Regresi, Analisis Regresi Non-Linear.`
+  },
+  health: {
+    name: 'Kesehatan & Kedokteran',
+    searchSuffix: 'jurnal kesehatan kedokteran medis klinis',
+    persona: 'Co-Pilot Riset Kesehatan Masyarakat, Keperawatan, Farmasi, Kedokteran Gigi, dan Ilmu Kedokteran untuk mahasiswa dan peneliti kesehatan di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Kesehatan:
+   - Model Determinan Kesehatan (Dahlgren & Whitehead): Faktor individu, sosial, lingkungan.
+   - Health Belief Model (HBM): Persepsi kerentanan, keparahan, manfaat, hambatan, dan isyarat bertindak.
+   - Teori Transisi Epidemiologi (Omran): Pergeseran pola penyakit dari infeksi ke degeneratif.
+   - Evidence-Based Medicine (EBM): Hierarki bukti ilmiah (RCT, Systematic Review, Meta-Analisis).
+   - Konsep Pencegahan (Leavell & Clark): Primer (promosi & proteksi), Sekunder (deteksi dini), Tersier (rehabilitasi).`,
+    methodGuide: `3. Metodologi Penelitian Kesehatan:
+   - Deskriptif: Cross-Sectional, Case Report, Case Series.
+   - Analitik: Case-Control, Kohort (Prospektif/Retrospektif).
+   - Eksperimental: RCT (Randomized Controlled Trial), Quasi-Eksperimen dengan Pre-Post Test.
+   - Systematic Review & Meta-Analisis (PRISMA Guidelines).
+   - Uji Diagnostik: Sensitivitas, Spesifisitas, NPV, PPV, Kurva ROC.
+   - Analisis: Odds Ratio, Relative Risk, Hazard Ratio, Kaplan-Meier Survival Analysis.`
+  },
+  law: {
+    name: 'Ilmu Hukum',
+    searchSuffix: 'jurnal hukum ilmu hukum perundang-undangan',
+    persona: 'Co-Pilot Riset dan Penulisan Karya Ilmiah Hukum (Skripsi/Tesis) untuk mahasiswa Fakultas Hukum di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Ilmu Hukum:
+   - Teori Kepastian Hukum (Hans Kelsen): Norma hukum berjenjang (Stufenbau-theorie), validitas hukum.
+   - Teori Keadilan (John Rawls): Veil of Ignorance, prinsip kebebasan dan perbedaan.
+   - Teori Perlindungan Hukum (Philipus Hadjon): Perlindungan preventif dan represif.
+   - Teori Negara Hukum (Rechtsstaat): Supremasi hukum, persamaan di muka hukum, perlindungan HAM.
+   - Sosiologi Hukum: Hukum sebagai fenomena sosial, law in books vs law in action.`,
+    methodGuide: `3. Metodologi Penelitian Hukum:
+   - Penelitian Hukum Normatif: Pendekatan undang-undang (statute approach), konseptual (conceptual), historis, kasus, komparatif.
+   - Penelitian Hukum Empiris: Pendekatan sosiologis/yuridis-empiris; wawancara mendalam, observasi lapangan.
+   - Sumber Bahan Hukum: Primer (UUD 1945, UU, PP, Perpres, Peraturan Daerah), Sekunder (buku, jurnal), Tersier (kamus, ensiklopedi).
+   - Analisis: Preskriptif (normatif), deskriptif-analitis (empiris).`
+  },
+  psychology: {
+    name: 'Psikologi',
+    searchSuffix: 'jurnal psikologi perilaku mental kognitif',
+    persona: 'Co-Pilot Riset Psikologi Klinis, Pendidikan, Industri-Organisasi, dan Sosial untuk mahasiswa dan peneliti psikologi di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Psikologi:
+   - Psikoanalisis (Freud): Id, Ego, Superego; mekanisme pertahanan ego; pengembangan psikoseksual.
+   - Behaviorisme (Watson, Skinner): Kondisioning klasik & operan, modifikasi perilaku.
+   - Humanistik (Maslow, Rogers): Hierarki kebutuhan, aktualisasi diri, person-centered therapy.
+   - Kognitif (Beck, Ellis): Distorsi kognitif, CBT (Cognitive Behavioral Therapy), skema kognitif.
+   - Psikologi Positif (Seligman): PERMA Model (Positive Emotions, Engagement, Relationships, Meaning, Achievement).`,
+    methodGuide: `3. Metodologi Penelitian Psikologi:
+   - Kuantitatif: Survei dengan skala psikologi baku (Likert, Semantic Differential); uji validitas & reliabilitas (Alpha Cronbach).
+   - Eksperimental: Within-Subject / Between-Subject Design; ABA design.
+   - Kualitatif: Fenomenologi, Studi Kasus, Narrative Inquiry, IPA (Interpretative Phenomenological Analysis).
+   - Alat Ukur Baku: BDI, DASS, MBTI, Raven's APM, Rorschach, TAT, DSM-5 criteria.
+   - Analisis: SPSS (Regresi, ANOVA, Korelasi Pearson/Spearman), NVivo (kualitatif).`
+  },
+  social: {
+    name: 'Ilmu Sosial & Humaniora',
+    searchSuffix: 'jurnal ilmu sosial sosiologi komunikasi politik humaniora',
+    persona: 'Co-Pilot Riset Sosiologi, Ilmu Komunikasi, Ilmu Politik, Antropologi, dan Humaniora untuk mahasiswa dan peneliti ilmu sosial di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Ilmu Sosial:
+   - Teori Struktural Fungsionalisme (Parsons, Durkheim): Fungsi sosial, integrasi, solidaritas mekanik & organik.
+   - Teori Konflik (Marx, Dahrendorf, Coser): Kelas sosial, ketimpangan, perubahan sosial.
+   - Teori Interaksionisme Simbolik (Mead, Blumer): Makna, simbol, interaksi sosial.
+   - Teori Konstruksi Sosial (Berger & Luckmann): Realitas sosial sebagai konstruksi subjektif.
+   - Teori Komunikasi: Uses & Gratifications (Katz), Agenda Setting (McCombs), Framing (Entman).`,
+    methodGuide: `3. Metodologi Penelitian Ilmu Sosial:
+   - Kualitatif: Etnografi, Fenomenologi, Studi Kasus, Grounded Theory, Discourse Analysis.
+   - Kuantitatif: Survei Sosial, Analisis Isi Kuantitatif, Polling, Statistik Sosial.
+   - Mixed Methods: Sequential Explanatory, Sequential Exploratory.
+   - Teknik Pengumpulan Data: Wawancara Mendalam (in-depth interview), FGD (Focus Group Discussion), Observasi Partisipan, Analisis Dokumen & Arsip.`
+  },
+  agriculture: {
+    name: 'Pertanian & Agribisnis',
+    searchSuffix: 'jurnal pertanian agribisnis agroteknologi pangan',
+    persona: 'Co-Pilot Riset Agroteknologi, Agribisnis, Peternakan, Perikanan, dan Kehutanan untuk mahasiswa dan peneliti pertanian di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Pertanian:
+   - Agronomi & Fisiologi Tanaman: Fotosintesis, respirasi, pertumbuhan, perkembangan, produksi tanaman.
+   - Ilmu Tanah: Kesuburan tanah, sifat fisik-kimia-biologi, manajemen hara (NPK), pH tanah.
+   - Hama & Penyakit Tanaman (PHT – Pengendalian Hama Terpadu): Musuh alami, pestisida nabati, varietas tahan.
+   - Agribisnis & Rantai Nilai: Analisis usaha tani (R/C Ratio, B/C Ratio, BEP), pemasaran komoditas, supply chain.
+   - Ketahanan Pangan (FAO): Ketersediaan, akses, pemanfaatan, dan stabilitas pangan.`,
+    methodGuide: `3. Metodologi Penelitian Pertanian:
+   - Eksperimental Lapangan: RAL (Rancangan Acak Lengkap), RAK (Rancangan Acak Kelompok), RALS (Faktorial).
+   - Analisis Usaha Tani: Perhitungan biaya produksi, penerimaan, keuntungan, R/C Ratio, Break Even Point.
+   - Survei Agribisnis: Kuesioner petani/peternak, analisis kelayakan finansial (NPV, IRR, Payback Period).
+   - Analisis Laboratorium: Uji kadar nutrisi, uji sifat fisikokimia produk pertanian.
+   - Statistik: ANOVA, Uji Duncan/Tukey (BNT/DMRT), Regresi Linier.`
+  },
+  communication: {
+    name: 'Ilmu Komunikasi',
+    searchSuffix: 'jurnal ilmu komunikasi media massa jurnalistik public relations',
+    persona: 'Co-Pilot Riset Ilmu Komunikasi, Jurnalistik, Public Relations, Advertising, dan Media Baru untuk mahasiswa dan peneliti komunikasi di Indonesia',
+    theoryGuide: `2. Teori-Teori Pokok Ilmu Komunikasi:
+   - Teori Uses & Gratifications (Katz, Blumler, Gurevitch): Motivasi penggunaan media, kepuasan audiens.
+   - Teori Agenda Setting (McCombs & Shaw): Pengaruh media terhadap persepsi publik.
+   - Teori Framing (Entman): Seleksi dan penonjolan isu dalam pemberitaan media.
+   - Teori Komunikasi Pemasaran Terpadu (IMC – Kotler): Iklan, PR, promosi penjualan, pemasaran digital.
+   - Teori New Media & Media Sosial: Convergence culture (Jenkins), filter bubble (Pariser), digital literacy.`,
+    methodGuide: `3. Metodologi Penelitian Komunikasi:
+   - Analisis Isi (Content Analysis): Kuantitatif (frekuensi, kategori) dan kualitatif (wacana, semiotika).
+   - Survei: Kuesioner tentang persepsi, sikap, perilaku media.
+   - Etnografi Digital: Observasi online, analisis platform media sosial.
+   - Eksperimen Komunikasi: Uji pesan/framing, efek iklan, A/B testing.
+   - Wawancara Mendalam & FGD: Pengalaman pengguna media, jurnalis, praktisi PR.`
+  }
+};
+
+// Comprehensive Core Academic System Prompt — now discipline-aware
 function buildMasterAcademicPrompt(discipline, citationFormat, extraContext) {
-  return `Anda adalah AcademAI — Co-Pilot Riset Akademik dan Penulisan Skripsi Ilmiah S1 Terkemuka di Indonesia, dengan spesialisasi mendalam pada bidang Pendidikan Anak Usia Dini (S1 PAUD) dan Ilmu Pendidikan.
+  const disc = DISCIPLINES[discipline] || DISCIPLINES['general_academic'];
+
+  return `Anda adalah AcademAI — ${disc.persona}.
+
+DISIPLIN ILMU AKTIF: ${disc.name}
 
 STANDAR ILMIAH & METODOLOGIS UTAMA:
 1. Pendekatan Piramida Terbalik (Inverted Pyramid) untuk Latar Belakang:
-   - Level Makro: Regulasi nasional, Kurikulum Merdeka PAUD (Fase Fondasi), Profil Pelajar Pancasila, STPPA (Permendikbudristek No. 5 Tahun 2022).
-   - Level Meso: Realitas empiris di satuan PAUD/TK (kondisi pembelajaran, kesiapan pendidik, ketersediaan sarana prasarana APE).
-   - Level Mikro: Observasi spesifik di kelas/kelompok usia (Kelompok A 4-5 tahun / Kelompok B 5-6 tahun) mengenai keterbatasan perkembangan yang terjadi.
-   - Analisis Kesenjangan: Das Sollen (tuntutan teoretis/normatif) vs Das Sein (kenyataan lapangan) yang melahirkan Research Gap.
-   - Urgensi Solusi Inovatif: Mengapa intervensi yang diajukan (misal: Media Loose Parts, APE bahan alam, metode bermain konstruktif/peran) mutlak diperlukan.
+   - Level Makro: Kebijakan nasional, regulasi, dan isu global yang relevan dengan bidang ${disc.name}.
+   - Level Meso: Realitas empiris di tingkat lembaga / industri / komunitas yang terkait topik.
+   - Level Mikro: Permasalahan konkret spesifik yang diidentifikasi melalui observasi/data lapangan.
+   - Analisis Kesenjangan: Das Sollen (standar normatif/teoretis) vs Das Sein (kenyataan lapangan) → Research Gap.
+   - Urgensi Solusi: Alasan ilmiah mengapa penelitian/intervensi yang diusulkan penting dilaksanakan.
 
-2. Teori-Teori Pokok PAUD yang Wajib Dikuasai & Diterapkan:
-   - Teori Perkembangan Kognitif Jean Piaget (Tahap Pra-operasional 2–7 tahun: berpikir simbolik, egosentrisme, pemahaman intuitif, belajar melalui manipulasi objek konkret).
-   - Teori Konstruktivisme Sosial Lev S. Vygotsky (Zone of Proximal Development / ZPD, peran Scaffolding pendidik, bahasa sebagai instrumen berpikir sosial).
-   - Pendekatan Maria Montessori (Periode sensitif, lingkungan terstruktur/prepared environment, kemandirian auto-education, media sensorik).
-   - Filosofi Ki Hajar Dewantara (Sistem Among: Ing Ngarso Sung Tulodo, Ing Madyo Mangun Karso, Tut Wuri Handayani; Tri Sentra Pendidikan; Kodrat Alam dan Kodrat Zaman).
-   - Standar Tingkat Pencapaian Perkembangan Anak (STPPA): 6 Aspek (Nilai Agama & Moral, Fisik-Motorik Halus/Kasar, Kognitif, Bahasa, Sosial-Emosional, Seni).
-   - Media Loose Parts & APE: Eksplorasi bahan terbuka (alam & sintetis) untuk merangsang kreativitas, HOTS anak usia dini, dan koordinasi motorik.
+${disc.theoryGuide}
 
-3. Metodologi Penelitian Skripsi:
-   - PTK (Penelitian Tindakan Kelas) model siklus Kemmis & McTaggart / Kurt Lewin: Perencanaan (Planning), Pelaksanaan (Acting), Pengamatan (Observing), Refleksi (Reflecting).
-   - Eksperimen / Quasi Experiment (Nonequivalent Control Group Design) dengan Pretest-Posttest.
-   - Rubrik Penilaian Perkembangan PAUD Standar Nasional:
-     * BB (Belum Berkembang - skor 1)
-     * MB (Mulai Berkembang - skor 2)
-     * BSH (Berkembang Sesuai Harapan - skor 3)
-     * BSB (Berkembang Sangat Baik - skor 4)
-   - Kriteria Keberhasilan Tindakan: Ketuntasan belajar klasikal (anak yang mencapai BSH/BSB minimal >= 75% atau 80%).
+${disc.methodGuide}
 
 4. Kaidah Bahasa & Penulisan Ilmiah:
-   - Menggunakan Bahasa Indonesia formal akademik baku sesuai Pedoman Umum Ejaan Bahasa Indonesia (EYD Edisi V / PUEBI).
-   - Struktur kalimat objektif, nominalisasi akademik, kalimat pasif impersonal, menghindari kata ganti orang pertama (seperti "saya", "kami", diganti "peneliti").
-   - Format sitasi ketat gaya ${citationFormat} (contoh: (Nurjanah, 2022) atau (Sujiono & Sujiono, 2021)).
-   - Setiap bab dan sub-bab ditulis dengan penomoran terstruktur (1.1, 1.2, 2.1, dst.) dan penyajian tabel Markdown yang rapi.${extraContext}`;
+   - Menggunakan Bahasa Indonesia formal akademik baku sesuai EYD Edisi V / PUEBI (atau English jika diminta).
+   - Struktur kalimat objektif, nominalisasi akademik, kalimat pasif impersonal, menghindari kata ganti orang pertama ("saya"/"kami" → "peneliti").
+   - Format sitasi ketat gaya ${citationFormat} (contoh: (Raharjo, 2023) atau (Smith & Jones, 2022)).
+   - Setiap bab dan sub-bab ditulis dengan penomoran terstruktur (1.1, 1.2, 2.1, dst.) dan tabel Markdown yang rapi.${extraContext}`;
 }
 
 // Handler for Citation Validator
@@ -553,12 +749,13 @@ async function handleCitationValidator(req, res) {
 // Handler for Full Article Generation (Tab 2)
 async function handleGenerateFull(req, res) {
   try {
-    const { topic, discipline = 'paud', language = 'indonesia', citationFormat = 'APA7', options = {} } = req.body;
+    const { topic, discipline = 'general_academic', language = 'indonesia', citationFormat = 'APA7', options = {} } = req.body;
+    const disc = DISCIPLINES[discipline] || DISCIPLINES['general_academic'];
     const sessionId = req.body.sessionId || `academ_full_${Date.now()}`;
-    console.log(`[AcademAI Full Article] Memulai generate artikel lengkap untuk topik: "${topic}" (Session: ${sessionId})...`);
+    console.log(`[AcademAI Full Article] Memulai generate artikel (${disc.name}) untuk topik: "${topic}" (Session: ${sessionId})...`);
 
     // Step 1: Query Google Scholar for papers
-    const scholarQuery = `${topic} pendidikan anak usia dini jurnal`;
+    const scholarQuery = `${topic} ${disc.searchSuffix}`;
     const scholarPapers = await searchGoogleScholar(scholarQuery, options.journalCount || 8);
     console.log(`[AcademAI Full Article] Ditemukan ${scholarPapers.length} jurnal pendukung.`);
 
@@ -590,15 +787,15 @@ async function handleGenerateFull(req, res) {
 
     // Step 4: Build Prompt for Complete Thesis / Scientific Article Draft
     const systemPrompt = buildMasterAcademicPrompt(discipline, citationFormat, referencesContext + memoryContext);
-    const userPrompt = `Tuliskan DRAF LENGKAP ARTIKEL ILMIAH / PROPOSAL SKRIPSI S1 PAUD yang komprehensif, mendalam, dan siap uji sidang untuk topik berikut:
+    const userPrompt = `Tuliskan DRAF LENGKAP ARTIKEL ILMIAH / PROPOSAL SKRIPSI yang komprehensif, mendalam, dan siap uji sidang untuk bidang "${disc.name}" dengan topik berikut:
 "${topic}"
 
 STRUKTUR DOKUMEN WAJIB YANG HARUS DISUSUN SECARA LENGKAP:
 # JUDUL PENELITIAN
-(Buat judul ilmiah yang operasional, jelas memuat Variabel X, Variabel Y, serta Subjek Kelompok Usia PAUD).
+(Buat judul ilmiah yang operasional, jelas memuat Variabel X, Variabel Y, serta Subjek/Populasi/Konteks yang relevan dengan bidang ${disc.name}).
 
 ## ABSTRAK (Bahasa Indonesia)
-(Tulis 150-200 kata, 1 paragraf, memuat latar belakang singkat, tujuan, metodologi PTK/Eksperimen, indikator ketercapaian, dan implikasi praktis).
+(Tulis 150-200 kata, 1 paragraf, memuat latar belakang singkat, tujuan, metodologi, indikator ketercapaian, dan implikasi praktis).
 **Kata Kunci:** (3-5 kata kunci spesifik dipisahkan tanda koma).
 
 ## ABSTRACT (English)
@@ -609,47 +806,46 @@ STRUKTUR DOKUMEN WAJIB YANG HARUS DISUSUN SECARA LENGKAP:
 
 ## BAB I: PENDAHULUAN
 ### 1.1 Latar Belakang Masalah
-(Gunakan alur Piramida Terbalik: Makro Kurikulum Merdeka PAUD & STPPA Permendikbudristek No 5/2022 -> Meso kondisi satuan PAUD -> Mikro masalah konkret yang diobservasi pada motorik/kognitif/karakter anak. Sertakan analisis Das Sollen vs Das Sein, Research Gap dari jurnal terdahulu, dan urgensi solusi inovatif minimal 400-500 kata).
+(Gunakan alur Piramida Terbalik: Makro kebijakan/regulasi/isu global → Meso kondisi lembaga/industri/komunitas → Mikro masalah konkret yang diidentifikasi. Sertakan analisis Das Sollen vs Das Sein, Research Gap dari jurnal terdahulu, dan urgensi solusi inovatif minimal 400-500 kata).
 ### 1.2 Identifikasi Masalah
 (Sebutkan minimal 4 poin identifikasi masalah nyata di lapangan).
 ### 1.3 Pembatasan Masalah
-(Batasi subjek kelompok usia, variabel intervensi, dan aspek perkembangan).
+(Batasi subjek/populasi penelitian, variabel, ruang lingkup, dan periode penelitian).
 ### 1.4 Rumusan Masalah
 (Buat pertanyaan penelitian yang operasional dan terukur).
 ### 1.5 Tujuan Penelitian
 (Tujuan umum dan tujuan khusus yang sinkron dengan rumusan masalah).
 ### 1.6 Manfaat Penelitian
-(Manfaat teoretis bagi keilmuan PAUD dan manfaat praktis bagi guru, anak, sekolah, serta peneliti selanjutnya).
+(Manfaat teoretis bagi pengembangan ilmu ${disc.name} dan manfaat praktis bagi pemangku kepentingan serta peneliti selanjutnya).
 
 ---
 
 ## BAB II: KAJIAN PUSTAKA, KERANGKA BERPIKIR, DAN HIPOTESIS
 ### 2.1 Kajian Teori Variabel Penelitian
-(Kupas mendalam teori Variabel Intervensi X dan Variabel Perkembangan Anak Y. Wajib memadukan Teori Piaget tentang pra-operasional konkret, Vygotsky ZPD & scaffolding, Maria Montessori, dan Filosofi Ki Hajar Dewantara Sistem Among).
+(Kupas mendalam teori Variabel X dan Variabel Y yang relevan dengan bidang ${disc.name}. Gunakan teori-teori pokok yang telah dijelaskan dalam sistem prompt).
 ### 2.2 Penelitian Terdahulu yang Relevan (Matriks Komparasi)
-(Buat TABEL MATRIKS Markdown komparasi 5 penelitian terdahulu yang memuat kolom: No | Peneliti & Tahun | Judul Penelitian | Metode & Subjek | Hasil/Temuan Utama | Persamaan & Perbedaan (Novelty)).
+(Buat TABEL MATRIKS Markdown komparasi 5 penelitian terdahulu yang memuat kolom: No | Peneliti & Tahun | Judul Penelitian | Metode & Subjek | Hasil/Temuan Utama | Persamaan & Perbedaan / Novelty).
 ### 2.3 Kerangka Berpikir
-(Uraikan bagan alur logis dari Kondisi Awal -> Tindakan Siklus I & II -> Kondisi Akhir yang Diharapkan).
+(Uraikan bagan alur logis dari Kondisi Awal → Variabel/Tindakan/Intervensi → Kondisi Akhir yang Diharapkan).
 ### 2.4 Hipotesis Tindakan / Penelitian
-(Rumuskan pernyataan hipotesis tindakan yang tegas).
+(Rumuskan pernyataan hipotesis yang tegas sesuai desain penelitian).
 
 ---
 
 ## BAB III: METODOLOGI PENELITIAN
 ### 3.1 Desain dan Model Penelitian
-(Gunakan PTK model spiral Kemmis & McTaggart: Perencanaan, Pelaksanaan, Pengamatan, Refleksi dalam 2 siklus, atau Desain Eksperimen).
-### 3.2 Subjek dan Waktu Penelitian
-(Sebutkan kelompok usia, jumlah anak didik, dan karakteristik lingkungan).
+(Jelaskan desain penelitian yang sesuai dengan bidang ${disc.name} dan tujuan penelitian).
+### 3.2 Populasi, Sampel, dan Teknik Sampling
 ### 3.3 Definisi Operasional Variabel
-### 3.4 Instrumen Pengumpulan Data & Rubrik Penilaian
-(Buat TABEL RUBRIK Penilaian Standar Nasional PAUD dengan kategori: BB [Belum Berkembang - 1], MB [Mulai Berkembang - 2], BSH [Berkembang Sesuai Harapan - 3], BSB [Berkembang Sangat Baik - 4]).
+### 3.4 Instrumen Pengumpulan Data
+(Buat TABEL INSTRUMEN / RUBRIK PENILAIAN yang sesuai dengan bidang dan metode penelitian).
 ### 3.5 Teknik Analisis Data & Indikator Keberhasilan
-(Rumus persentase ketuntasan klasikal P = (f / N) x 100% dan target ketuntasan minimal >= 75-80% pada kriteria BSH/BSB).
+(Jelaskan teknik analisis data dan kriteria keberhasilan penelitian).
 
 ---
 
-## BAB IV: RENCANA HASIL PENELITIAN DAN PEMBAHASAN
-(Deskripsikan estimasi jalannya siklus, perbaikan tindakan guru, peningkatan skor anak, dan pembahasan ilmiah yang mengaitkan temuan dengan teori Piaget, Vygotsky, dan riset terdahulu).
+## BAB IV: HASIL PENELITIAN DAN PEMBAHASAN
+(Deskripsikan rencana/estimasi hasil penelitian dan pembahasan ilmiah yang mengaitkan temuan dengan teori-teori pokok pada bidang ${disc.name} dan riset terdahulu).
 
 ---
 
@@ -719,22 +915,23 @@ async function handleGeneration(req, res) {
 
     const message = body.message || body.query || body.topic || '';
     const mode = body.mode || 'drafting';
-    const discipline = body.discipline || 'paud';
+    const discipline = body.discipline || 'general_academic';
     const citationFormat = body.citationFormat || 'APA7';
     const sessionId = body.sessionId || `academ_${Date.now()}`;
     const useMemory = body.useMemory !== false;
+    const disc = DISCIPLINES[discipline] || DISCIPLINES['general_academic'];
 
-    console.log(`[AcademAI Chat] Request mode="${mode}", discipline="${discipline}", sessionId="${sessionId}", message="${message.substring(0, 60)}..."`);
+    console.log(`[AcademAI Chat] Request mode="${mode}", discipline="${disc.name}", sessionId="${sessionId}", message="${message.substring(0, 60)}..."`);
 
     // Step 1: Cari Jurnal Google Scholar
-    const searchQuery = message.length > 5 ? `${message} paud jurnal` : 'pendidikan anak usia dini media loose parts motorik';
+    const searchQuery = message.length > 5 ? `${message} ${disc.searchSuffix}` : `${disc.searchSuffix} penelitian terbaru`;
     const scholarPapers = await searchGoogleScholar(searchQuery, 6);
     console.log(`[AcademAI Chat] Menemukan ${scholarPapers.length} paper Google Scholar`);
 
     // Simpan paper pertama ke Zotero jika ada
     if (scholarPapers.length > 0) {
       saveToZotero(scholarPapers[0]).then(saved => {
-        if (saved) console.log(`[Zotero Chat] Otomatis tersimpan ke Zotero (Skripsi S1 PAUD): "${scholarPapers[0].title}"`);
+        if (saved) console.log(`[Zotero Chat] Otomatis tersimpan ke Zotero: "${scholarPapers[0].title}"`);
       });
     }
 
@@ -760,7 +957,7 @@ async function handleGeneration(req, res) {
           sessionDocs.map((doc, idx) => `--- [DOKUMEN MEMORI ${idx+1}: "${doc.title}" | Kategori: ${doc.type} | Panjang: ${doc.wordCount} kata] ---\n${doc.content}`).join('\n\n---\n\n') +
           "\n\nPETUNJUK KELANJUTAN PENELITIAN DARI MEMORI:\n" +
           "1. KONTINUITAS LOGIS: Analisis dokumen di memori di atas secara seksama. Hasilkan kelanjutan bab, pembahasan, instrumen, atau analisis baru yang menyambung secara logis dan runtut.\n" +
-          "2. KONSISTENSI DATA: Jangan mengubah variabel penelitian (Variabel X, Variabel Y), subjek anak PAUD, latar sekolah, atau model tindakan yang sudah ditetapkan di dokumen memori.\n" +
+          "2. KONSISTENSI DATA: Jangan mengubah variabel penelitian (Variabel X, Variabel Y), subjek/populasi, atau desain penelitian yang sudah ditetapkan di dokumen memori.\n" +
           "3. NON-REDUNDAN: Hindari mengulang teks pendahuluan yang persis sama kecuali diminta merangkum; fokuslah pada pengembangan konten lanjutan yang diminta pengguna.\n" +
           "================================================================================\n";
       }
@@ -774,30 +971,30 @@ async function handleGeneration(req, res) {
       userInstruction = `Buat ABSTRAK DWIBAHASA (Bahasa Indonesia 150-200 kata dan Bahasa Inggris / Abstract italic 150-200 kata) lengkap dengan Kata Kunci / Keywords untuk topik atau draf penelitian berikut (rujuk dokumen di memori jika ada):
 "${message}"
 
-Pedoman IMRAD:
-- Pendahuluan & Latar Belakang (masalah riil perkembangan anak PAUD).
+Pedoman IMRAD (sesuaikan dengan bidang ${disc.name}):
+- Pendahuluan & Latar Belakang (masalah dan urgensi penelitian).
 - Tujuan Penelitian.
-- Metode Penelitian (Desain PTK / Eksperimen, subjek kelompok A/B, teknik pengumpulan data).
-- Hasil Temuan Utama (peningkatan persentase ketuntasan indikator BB, MB, BSH, BSB).
+- Metode Penelitian (desain, sampel/subjek, instrumen, teknik pengumpulan data).
+- Hasil Temuan Utama (data/fakta utama yang ditemukan).
 - Kesimpulan dan Implikasi Praktis.`;
     } else if (mode === 'SLR') {
       userInstruction = `Susun SYSTEMATIC LITERATURE REVIEW (SLR) / KAJIAN PUSTAKA KOMPREHENSIF untuk topik berikut (hubungkan dengan dokumen di memori jika tersedia):
 "${message}"
 
 Wajib menyertakan:
-1. Sintesis Kritis Teoretis (Integrasi teori Jean Piaget, Lev Vygotsky, Maria Montessori, dan Ki Hajar Dewantara).
+1. Sintesis Kritis Teoretis (integrasikan teori-teori pokok yang relevan dengan bidang ${disc.name}).
 2. TABEL MATRIKS KOMPARASI 5-8 PENELITIAN TERDAHULU (Format Markdown Table dengan kolom: No | Peneliti & Tahun | Judul Penelitian | Metode & Subjek | Hasil Utama | Kebaruan / Novelty dibandingkan riset ini).
 3. Kerangka Berpikir Teoretis dan Alur Konseptual.
 4. Identifikasi Research Gap yang belum terjawab oleh penelitian sebelumnya.`;
     } else if (mode === 'proposal') {
-      userInstruction = `Susun DRAF PROPOSAL PENELITIAN SKRIPSI S1 PAUD yang berbobot akademik tinggi mengenai (manfaatkan data dari dokumen memori jika ada):
+      userInstruction = `Susun DRAF PROPOSAL PENELITIAN SKRIPSI yang berbobot akademik tinggi pada bidang ${disc.name} mengenai (manfaatkan data dari dokumen memori jika ada):
 "${message}"
 
 Struktur yang harus disusun:
-- Judul Operasional Penelitian
-- BAB I: Latar Belakang Masalah (Piramida Terbalik: Makro Kurikulum Merdeka PAUD -> Meso -> Mikro), Identifikasi Masalah, Rumusan Masalah, dan Tujuan.
-- BAB II: Landasan Teori (Piaget, Vygotsky ZPD, STPPA Permendikbudristek 5/2022) & Kerangka Berpikir.
-- BAB III: Metodologi Penelitian (PTK 2 Siklus model Kemmis & McTaggart atau Eksperimen), Subjek Kelompok Usia (Kelompok A 4-5 tahun / B 5-6 tahun), TABEL RUBRIK Penilaian PAUD (BB, MB, BSH, BSB), Kisi-kisi Observasi, dan Rumus Ketuntasan Klasikal.`;
+- Judul Operasional Penelitian (memuat Variabel X, Variabel Y, dan konteks/populasi penelitian).
+- BAB I: Latar Belakang Masalah (Piramida Terbalik: Makro → Meso → Mikro), Identifikasi Masalah, Rumusan Masalah, dan Tujuan.
+- BAB II: Landasan Teori (teori-teori pokok bidang ${disc.name}) & Kerangka Berpikir.
+- BAB III: Metodologi Penelitian (desain penelitian yang sesuai dengan bidang ${disc.name}), Populasi & Sampel, Instrumen, Teknik Analisis Data.`;
     } else if (mode === 'paraphrasing') {
       userInstruction = `Lakukan PARAFRASE AKADEMIK TINGKAT TINGGI untuk menurunkan skor kemiripan Turnitin (<15%) pada teks berikut:
 "${message}"
@@ -829,10 +1026,11 @@ Pedoman Analisis Statistik:
       userInstruction = `Tuliskan DRAF AKADEMIK MENDALAM (minimal 600-900 kata) mengenai:
 "${message}"
 
+Bidang ilmu: ${disc.name}
 Jika terdapat dokumen di memori riset, sambungkan dan kembangkan secara khusus sesuai permintaan di atas.
 Gunakan struktur Piramida Terbalik (Inverted Pyramid):
-1. Fenomena Makro (Kebijakan Kurikulum Merdeka PAUD / STPPA Permendikbudristek No 5/2022 / Profil Pelajar Pancasila).
-2. Kondisi Meso di satuan PAUD dan Mikro di kelas (keterbatasan stimulasi motorik/kognitif/sosio-emosional).
+1. Fenomena Makro (kebijakan nasional, regulasi, tren global, atau isu terkini yang relevan dengan ${disc.name}).
+2. Realitas Meso di tingkat lembaga/industri/komunitas dan Mikro masalah konkret di lapangan.
 3. Kesenjangan Teoretis & Empiris (Das Sollen vs Das Sein).
 4. State of the Art & Research Gap berdasarkan temuan jurnal Google Scholar terkini.
 5. Urgensi Solusi Inovatif dan Dampak Signifikannya.
@@ -1391,8 +1589,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`👉 Web Interface : http://localhost:${PORT}`);
   console.log(`🧠 AI Engine     : Google Gemini (Smart Multi-Model Fallback)`);
   console.log(`🎓 Research Index: Google Scholar (SerpApi Organic Index)`);
-  console.log(`📚 Reference Mgr : Zotero Library (andri_akademi - Skripsi S1 PAUD)`);
+  console.log(`📚 Reference Mgr : Zotero Library (andri_akademi - Universal Academic Research)`);
   console.log(`💾 Memory System : Active (Disk Persistence at ./data/memory.json)`);
+  console.log(`🌐 Disciplines   : 12 Bidang Ilmu (Umum, Pendidikan, PAUD, Ekonomi, Hukum, dll)`);
   console.log(`📋 Modules Active: Drafting, SLR, Proposal, Abstract,`);
   console.log(`                   Paraphrasing, Editing, Statistics, Validator, Plagiarism`);
   console.log('========================================================');

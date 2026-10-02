@@ -55,7 +55,7 @@
     </svg>
     AcademAI
   </div>
-  <span class="header-badge">v2.0 · Gemini Frontier Edition</span>
+  <span class="header-badge">v2.0 · Universal Academic Edition</span>
   <div class="header-spacer"></div>
   <div class="header-status" id="status-indicator" aria-live="polite">
     <div class="status-dot offline" id="status-dot"></div>
@@ -109,17 +109,18 @@
 
           <!-- Discipline Select -->
           <select class="form-select" id="chat-discipline" style="width:auto;font-size:0.8rem;padding:6px 32px 6px 12px;" aria-label="Pilih disiplin ilmu">
-            <option value="paud" selected>🧸 PAUD & Pendidikan Anak</option>
+            <option value="general_academic" selected>📚 Umum / Lintas Disiplin</option>
             <option value="education">🎓 Ilmu Pendidikan</option>
-            <option value="general_academic">📚 Umum</option>
-            <option value="economics">💰 Ekonomi</option>
+            <option value="paud">🧸 PAUD & Pendidikan Anak</option>
+            <option value="economics">💰 Ekonomi & Bisnis</option>
             <option value="law">⚖️ Hukum</option>
             <option value="psychology">🧠 Psikologi</option>
             <option value="engineering">⚙️ Teknik</option>
             <option value="health">🏥 Kesehatan</option>
-            <option value="computer_science">💻 Komputer</option>
-            <option value="social">👥 Sosial</option>
+            <option value="computer_science">💻 Ilmu Komputer</option>
+            <option value="social">👥 Ilmu Sosial</option>
             <option value="agriculture">🌾 Pertanian</option>
+            <option value="communication">📡 Komunikasi</option>
           </select>
 
           <!-- Memory Context Toggle -->
@@ -228,9 +229,10 @@
               <div class="form-group">
                 <label class="form-label" for="gen-discipline">Disiplin Ilmu *</label>
                 <select id="gen-discipline" class="form-select" aria-required="true">
-                  <option value="general_academic">📚 Umum / Lintas Disiplin</option>
-                  <option value="economics" selected>💰 Ekonomi & Bisnis</option>
-                  <option value="education">🎓 Pendidikan</option>
+                  <option value="general_academic" selected>📚 Umum / Lintas Disiplin</option>
+                  <option value="education">🎓 Ilmu Pendidikan</option>
+                  <option value="paud">🧸 PAUD & Pendidikan Anak</option>
+                  <option value="economics">💰 Ekonomi & Bisnis</option>
                   <option value="law">⚖️ Hukum</option>
                   <option value="psychology">🧠 Psikologi</option>
                   <option value="engineering">⚙️ Teknik & Teknologi</option>
