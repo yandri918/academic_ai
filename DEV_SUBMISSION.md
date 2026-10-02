@@ -1,75 +1,76 @@
 ---
-title: "AcademAI — I Built an Open-Source AI Research Co-Pilot So My Wife Could Finally Finish Her Thesis"
+title: "AcademAI — An Open-Source Academic Co-Pilot I Built for My Wife's S1 PAUD Thesis"
 published: true
-description: "A multi-disciplinary academic writing assistant built with an open-source Node.js agent harness + Google Gemini — helping Indonesian university students write thesis papers, validate citations, detect plagiarism, and analyze statistics. Built for my wife studying S1 PAUD."
 tags: hacktoberfest, ai, opensource, webdev
+description: "A dual-engine academic co-pilot built with an open-source agent harness, Google Gemma 2 (open-weight), and Google Gemini fallback to help my wife complete her early childhood education thesis."
 ---
 
 *This is a submission for the [Hacktoberfest Weekend Challenge: Build for a Friend](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)*
 
----
-
 ## What I Built
 
-**AcademAI** is a full-stack AI-powered academic research co-pilot. The "friend" in my case is someone even closer — **my wife**, who is finishing her **S1 PAUD (Pendidikan Anak Usia Dini — Early Childhood Education)** thesis while also managing our entire household.
+<!-- What does it do, and who is the friend or loved one you built it for?  What problem does it solve for them? -->
 
-Every night I'd come home and see her at the kitchen table: ten browser tabs open, a citation that turned out to be fake (the AI made up a Piaget paper that never existed), and a plagiarism score that wouldn't go below 22%.
+I built **AcademAI** for someone very close to my heart: **my wife**. 
 
-> *"It doesn't have to be big. It has to matter to them."*
+She is currently completing her undergraduate degree in **S1 PAUD (Pendidikan Anak Usia Dini — Early Childhood Education)** in Indonesia while also managing our home and daily life. Every evening, I watched her sit at the kitchen table overwhelmed by the sheer friction of academic writing:
+1. **AI Hallucinations**: Generic AI models constantly fabricated academic references (e.g., inventing non-existent papers by Jean Piaget and Lev Vygotsky).
+2. **Citation Auditing**: Cross-checking citations against genuine journal indices was taking hours of manual work.
+3. **Complex Local Standards**: Global AI tools knew nothing about Indonesia's early childhood curriculum standards (STPPA Permendikbudristek No. 5/2022) or national PAUD developmental rubrics (**BB / MB / BSH / BSB**).
+4. **Action Research Statistics**: In Classroom Action Research (PTK), calculating paired t-tests and Hake's normalized gain (**N-Gain**) and translating them into academic Indonesian prose caused constant anxiety.
+5. **Turnitin Anxiety**: Keeping similarity scores under university-mandated thresholds (<15%) required laborious structural sentence paraphrasing.
 
-This matters to her. A lot. So I built it.
-
-### The Problem She Faced
-
-| Her Pain Point | What AcademAI Does |
-|---------------|-------------------|
-| Spending hours searching for PAUD journals | 🔍 Auto-searches Google Scholar using discipline-aware queries |
-| AI hallucinating fake Piaget/Vygotsky citations | ✅ Citation Validator cross-checks every reference against real databases |
-| Plagiarism score stuck at 20%+ | 🔄 Academic paraphrasing mode targets <15% Turnitin similarity |
-| Can't interpret N-Gain scores from PTK research | 📊 Statistics Engine: Paired t-Test + N-Gain (Hake 1999) with ready-to-paste Indonesian prose |
-| Blank page anxiety for Bab I–V | 🏗️ Full thesis generator: complete 5-chapter draft in one request |
-| Only useful for PAUD | 🌐 Expanded to 12 disciplines — so any student can use it |
-
-### Who This Is For
-
-Any university student in Indonesia (or anywhere) who needs help with:
-- 🎓 Bachelor/Master thesis (Skripsi/Tesis) in any discipline
-- 📄 Scientific journal articles (IMRaD format)
-- 🔬 Research proposals
-- 📋 Systematic Literature Reviews (SLR)
-- 📊 Statistical interpretation of classroom research data
+### What AcademAI Does
+**AcademAI** is an open-source, full-stack academic research and writing co-pilot:
+- **Grounds AI in Real Scholarly Papers**: Injects live Google Scholar and Semantic Scholar search results into the prompt context to prevent hallucinated citations.
+- **Automated Citation Validator**: A RegEx engine that parses APA 7th / DOI citations and verifies them against open scientific databases (marking items as `VALID`, `PARTIAL`, or `INVALID`).
+- **Zero-Dependency Statistics Engine**: Computes Paired t-Tests and Hake (1999) N-Gain scores and outputs publishable Indonesian academic interpretation ready for Chapter IV (Bab IV).
+- **Turnitin-Safe Academic Paraphraser**: Applies syntactic nominalization and passive academic transformations to lower similarity scores.
+- **Universal Multi-Disciplinary Architecture**: While originally built for my wife's PAUD research, it includes an open **DISCIPLINES Registry** covering **12 academic faculties** (Education, Economics, Law, Health, Computer Science, Engineering, Psychology, Agriculture, etc.).
 
 ---
 
 ## Demo
 
-🌐 **Live App**: https://academicai-production-a41d.up.railway.app
+<!-- Share a deployed link or a video demo. -->
 
-**Try it:**
+- 🌐 **Live Web Application**: [https://academicai-production-a41d.up.railway.app](https://academicai-production-a41d.up.railway.app)
+- 📡 **Live Health Check**: [https://academicai-production-a41d.up.railway.app/healthz](https://academicai-production-a41d.up.railway.app/healthz)
 
-1. **Tab 1 — Chat Mode**: Select a discipline (PAUD, Economics, Law, Computer Science, Health, etc.), type your research question, and get AI-written content grounded in real Google Scholar references.
+### How to Explore the Live Demo:
+1. **Chat & Drafting (Tab 1)**: Select **Pendidikan Anak Usia Dini (PAUD)** or any of the 12 disciplines, choose a research mode (Drafting, SLR, Proposal, Abstract, or Statistics), and ask a question. Notice how every output cites verified papers retrieved on the fly.
+2. **Full Thesis Generator (Tab 2)**: Enter a research topic to generate a comprehensive 5-chapter thesis draft with bilingual abstract, theoretical framework, research matrix, and APA references.
+3. **Citation Validator (Tab 3)**: Paste any paragraph containing in-text citations (e.g., `(Piaget, 1976)` or `(Sujiono, 2021)`) to receive an instant verification report.
+4. **Plagiarism Auditor (Tab 4)**: Audit paragraphs and generate Turnitin-compliant academic paraphrases.
+5. **Statistics Engine (Tab 5)**: Input classroom pretest and posttest scores to generate instant paired t-test results, N-Gain calculations, and formal academic analysis for Bab IV.
 
-2. **Tab 2 — Full Article Generator**: Enter a thesis topic → get complete Bab I–V draft with abstract (Indonesian + English), methodology, literature review matrix, and APA 7th bibliography.
-
-3. **Tab 3 — Citation Validator**: Paste any academic paragraph → line-by-line report: ✅ VALID · ⚠️ PARTIAL · ❌ INVALID.
-
-4. **Tab 4 — Plagiarism Auditor**: Paste your draft → Turnitin-style similarity audit with academic paraphrase suggestions.
-
-5. **Tab 5 — Statistics Engine**: Input pretest/posttest scores → get Paired t-Test + N-Gain Score (Hake 1999) with interpretation in proper academic Indonesian, ready to paste into Bab IV.
-
-**Health Check:**
 ```bash
-curl https://academicai-production-a41d.up.railway.app/healthz
+# Verify the live production deployment
+curl -s https://academicai-production-a41d.up.railway.app/healthz
 ```
+
 ```json
 {
   "status": "ok",
   "server": "AcademAI Universal Academic Engine",
   "discipline": "Universal Academic Research (Multi-Disciplinary)",
-  "features": ["memory_context","pdf_parser","plagiarism_checker",
-    "google_scholar","zotero_sync","full_generator",
-    "citation_validator","academic_stats","dataviz_mcp"],
-  "models": ["gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.7-flash","gemini-3.8-flash"]
+  "features": [
+    "memory_context",
+    "pdf_parser",
+    "plagiarism_checker",
+    "google_scholar",
+    "zotero_sync",
+    "full_generator",
+    "citation_validator",
+    "academic_stats",
+    "dataviz_mcp"
+  ],
+  "models": [
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash"
+  ]
 }
 ```
 
@@ -77,274 +78,145 @@ curl https://academicai-production-a41d.up.railway.app/healthz
 
 ## Code
 
+<!-- Show us the code!  You can embed a GitHub repo directly into your post. -->
+
 {% github yandri918/academic_ai %}
 
-### Architecture: An Open-Source Agent Harness Wrapping Gemini
-
-The core idea: a **fully open-source Node.js/Express agent harness** that orchestrates Google Scholar searches, session memory, and the Gemini API — with every non-LLM component being MIT-licensed and self-hostable.
+### System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Browser (Vanilla HTML5 · CSS3 · ES2022)  — zero frameworks │
-│  5 Tabs: Chat · Generator · Validator · Plagiarism · Stats  │
-└──────────────────────┬──────────────────────────────────────┘
-                       │  REST / JSON
-┌──────────────────────▼──────────────────────────────────────┐
-│  OPEN-SOURCE AGENT HARNESS (Node.js + Express)              │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  DISCIPLINES Registry (12 academic fields)           │   │
-│  │  Each has: persona · searchSuffix · theoryGuide     │   │
-│  │           · methodGuide  ← all open-source config   │   │
-│  └────────┬────────────────────────────────────────────┘   │
-│           │  buildMasterAcademicPrompt(discipline, ...)     │
-│  ┌────────▼──────────┐  ┌────────────┐  ┌──────────────┐  │
-│  │  Google Gemini    │  │  Google    │  │  Zotero API  │  │
-│  │  (partner API)    │  │  Scholar   │  │  auto-sync   │  │
-│  │  4-model fallback │  │  SerpApi   │  │  references  │  │
-│  └───────────────────┘  └────────────┘  └──────────────┘  │
-│                                                             │
-│  ┌──────────────────────┐  ┌──────────────────────────────┐ │
-│  │  Stats Engine        │  │  DataViz MCP Server          │ │
-│  │  Paired t-Test       │  │  Chart.js · Mermaid          │ │
-│  │  N-Gain (Hake 1999)  │  │  (both MIT licensed)         │ │
-│  └──────────────────────┘  └──────────────────────────────┘ │
-│                                                             │
-│  express-rate-limit: 30 req/10 min (anti-cost-explosion)   │
-└─────────────────────────────────────────────────────────────┘
-             Deployed via Dockerfile → Railway (free tier)
+┌─────────────────────────────────────────────────────────────────┐
+│     Client Layer: Vanilla HTML5 · CSS3 · ES2022 (Zero Build)     │
+│   5 Academic Tabs: Chat · Generator · Validator · Plag · Stats   │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │ REST API
+┌────────────────────────────────▼────────────────────────────────┐
+│             OPEN-SOURCE AGENT HARNESS (Node.js/Express)          │
+│                                                                 │
+│   ┌────────────────────────────────────────────────────────┐    │
+│   │  DISCIPLINES Registry (12 Faculties, MIT License)       │    │
+│   │  Dynamic Personas · Theory Guides · Methodology Models │    │
+│   └────────────────────────────┬───────────────────────────┘    │
+│                                │                                │
+│        ┌───────────────────────┼────────────────────────┐       │
+│        ▼                       ▼                        ▼       │
+│ ┌───────────────┐     ┌─────────────────┐     ┌───────────────┐ │
+│ │ Google Gemini │     │ Google Scholar  │     │  Zotero REST  │ │
+│ │ 4-Model Chain │     │ & Semantic APIs │     │  Auto-Sync    │ │
+│ └───────────────┘     └─────────────────┘     └───────────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────┐   ┌───────────────────────────┐ │
+│ │ Pure-JS Statistics Engine   │   │ RegEx Citation Validator  │ │
+│ │ Paired t-Test · Hake N-Gain │   │ APA7 / CrossRef Checker   │ │
+│ └─────────────────────────────┘   └───────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                 ▲
+                                 │ Alternative Workflow
+┌────────────────────────────────┴────────────────────────────────┐
+│    LOCAL OPEN-WEIGHT ENGINE: n8n LangChain Visual Workflow      │
+│     Running Google Gemma 2 (9B via Ollama) 100% Offline         │
+│             (/n8n/academ_ai_workflow_gemma.json)                │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### The DISCIPLINES Registry — The Core Open-Source Contribution
+### Core Code Snippet: The 12-Discipline Prompt Orchestrator
 
-This is the part I'm most proud of — and it's 100% open-source. A registry of 12 academic disciplines, each with a tailored AI persona, theoretical framework, and research methodology. **Zero cost. Zero dependency. Pure JavaScript object.**
-
-When the user selects a discipline, the entire AI system prompt — persona, canonical theories, accepted methodologies — switches dynamically:
+The foundational open-source component is the modular `DISCIPLINES` registry, which injects specialized scientific theories and research methodologies dynamically into the agent prompt:
 
 ```javascript
-// server.js — MIT licensed, fully open-source
+// server.js (MIT Licensed)
 const DISCIPLINES = {
   paud: {
     name: 'Pendidikan Anak Usia Dini (PAUD)',
     searchSuffix: 'pendidikan anak usia dini jurnal PAUD',
-    persona: 'Co-Pilot Riset Skripsi S1 PAUD Terkemuka di Indonesia',
-    theoryGuide: `
-   - Piaget: Tahap Pra-operasional 2–7 tahun (berpikir simbolik, ZPD)
-   - Vygotsky: Zone of Proximal Development, Scaffolding
-   - Montessori: Prepared environment, auto-education, media sensorik
-   - Ki Hajar Dewantara: Sistem Among, Tri Sentra Pendidikan
-   - STPPA (Permendikbudristek No. 5/2022): 6 aspek perkembangan`,
-    methodGuide: `
-   - PTK model Kemmis & McTaggart: Planning→Acting→Observing→Reflecting
-   - Rubrik PAUD: BB(1) / MB(2) / BSH(3) / BSB(4)
-   - Ketuntasan klasikal target >= 75–80% BSH/BSB`
+    persona: 'Co-Pilot Riset Skripsi S1 PAUD dan Ilmu Keguruan Anak Usia Dini Terkemuka di Indonesia',
+    theoryGuide: `Teori Pokok: Piaget (Pra-operasional 2–7 tahun), Vygotsky (ZPD & Scaffolding), 
+Montessori (Prepared environment, media sensorik), Ki Hajar Dewantara (Sistem Among), 
+STPPA (Permendikbudristek No. 5/2022: 6 Aspek Perkembangan).`,
+    methodGuide: `Metodologi: PTK model Kemmis & McTaggart (Planning, Acting, Observing, Reflecting), 
+Rubrik Standar: BB(1), MB(2), BSH(3), BSB(4). Target ketuntasan klasikal >= 75-80%.`
   },
-  economics: {
-    name: 'Ekonomi & Bisnis',
-    searchSuffix: 'jurnal ekonomi bisnis manajemen keuangan',
-    persona: 'Co-Pilot Riset Ilmu Ekonomi, Manajemen, Akuntansi...',
-    theoryGuide: `Kotler & Keller, Jensen & Meckling, Porter's Five Forces...`,
-    methodGuide: `SEM, SmartPLS, Regresi Berganda, Uji Asumsi Klasik...`
-  },
-  // + 10 more: general_academic, education, computer_science,
-  //   engineering, health, law, psychology, social,
-  //   agriculture, communication
+  // 11 other faculties: education, economics, law, computer_science, engineering, health, etc.
 };
 
-// The magic: one function, 12 completely different AI personas
 function buildMasterAcademicPrompt(discipline, citationFormat, extraContext) {
   const disc = DISCIPLINES[discipline] || DISCIPLINES['general_academic'];
   return `Anda adalah AcademAI — ${disc.persona}.
-
 DISIPLIN ILMU AKTIF: ${disc.name}
-
 ${disc.theoryGuide}
 ${disc.methodGuide}
-
-Format sitasi: ${citationFormat}
+Format Sitasi Wajib: ${citationFormat}
 ${extraContext}`;
 }
-```
-
-### Open-Source Multi-Model Fallback Agent
-
-When one Gemini model is overloaded, the harness automatically falls back — keeping the app alive for students at critical moments (like the night before a thesis deadline):
-
-```javascript
-// Fully open-source orchestration logic
-const MODELS = [
-  'gemini-3.1-flash-lite',   // fastest, ultra-low latency
-  'gemini-3.5-flash-lite',   // highly efficient reasoning
-  'gemini-3.7-flash',        // balanced multimodal speed & quality
-  'gemini-3.8-flash'         // state-of-the-art academic prose
-];
-
-async function callGemini(systemPrompt, userPrompt) {
-  let lastError;
-  for (const model of MODELS) {
-    try {
-      console.log(`[Gemini] Trying ${model}...`);
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: systemPrompt }] },
-            contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 8192 }
-          })
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return { text: data.candidates[0].content.parts[0].text, model };
-      }
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  throw new Error(`All Gemini endpoints busy. ${lastError?.message}`);
-}
-```
-
-### Statistics Engine — Fully Open-Source, No External Dependencies
-
-The N-Gain calculator is pure JavaScript math — no libraries, no black boxes, no cost:
-
-```javascript
-app.post('/api/stats/calculate', async (req, res) => {
-  const { pretest, posttest, maxScore, variableName } = req.body;
-
-  const n = pretest.length;
-  const diffs = pretest.map((pre, i) => posttest[i] - pre);
-  const meanDiff = diffs.reduce((a, b) => a + b) / n;
-  const variance = diffs.reduce((sum, d) => sum + (d - meanDiff) ** 2, 0) / (n - 1);
-  const tStat = meanDiff / Math.sqrt(variance / n);
-  const df = n - 1;
-
-  const preAvg = pretest.reduce((a, b) => a + b) / n;
-  const postAvg = posttest.reduce((a, b) => a + b) / n;
-  const nGain = (postAvg - preAvg) / (maxScore - preAvg);
-  const nGainCategory = nGain >= 0.7 ? 'Tinggi' : nGain >= 0.3 ? 'Sedang' : 'Rendah';
-
-  // Generates ready-to-paste Indonesian academic prose for Bab IV
-  const interpretation = generateAcademicInterpretation({
-    variableName, tStat, df, nGain, nGainCategory, preAvg, postAvg
-  });
-
-  res.json({ tStat, df, nGain, nGainCategory, preAvg, postAvg, interpretation });
-});
 ```
 
 ---
 
 ## How I Built It
 
-### Dual-Engine Architecture: Cloud Accessibility + Open-Weight Local Inference
+<!-- Which open-source AI did you use (open-weight models, agent harnesses, frameworks, local inference), and how is your project built around it? -->
 
-AcademAI supports two deployment modes:
-1. **Production Web (Cloud)**: Node.js/Express agent harness wrapping **Google Gemini** (with a 4-model fallback chain) — designed for students with older laptops or mobile phones.
-2. **Local / Privacy-First (Open-Weight)**: An exportable agent workflow (`n8n/academ_ai_workflow_gemma.json`) running **Google Gemma 2 (9B)** locally via Ollama + Semantic Scholar API — 100% offline, zero data sent to external servers.
+To solve my wife's challenge without locking her into an expensive proprietary ecosystem, I architected AcademAI around a **dual-engine approach**:
 
-| Layer | Tool | Type / License |
-|-------|------|----------------|
-| **Open-Weight LLM** | Google Gemma 2 (9B via Ollama) | Open-Weight Model |
-| **Cloud LLM (Partner)** | Google Gemini API (Flash Lite / Flash / Pro) | Partner Category (Free Tier) |
-| **Agent Harness** | Node.js + Express | MIT (100% Open Source) |
-| **Visual Workflow Engine**| n8n LangChain Agent Workflows | Fair-code / Open Workflow |
-| **Frontend** | Vanilla HTML5 / CSS3 / ES2022 | MIT (Zero build tools) |
-| **Academic Search** | SerpApi (Google Scholar) + Semantic Scholar API | Open/Freemium APIs |
-| **Citation Validator** | RegEx parser + Cross-database validator | MIT (Pure JS) |
-| **Stats Engine** | Paired t-Test & Hake's N-Gain calculator | MIT (Pure JS, zero deps) |
-| **Data Visualization** | Chart.js · Mermaid.js | MIT |
-| **Containerization** | Docker (`node:20-alpine`) | Apache 2.0 |
-| **Deployment** | Railway | Free tier cloud deployment |
+### 1. Open-Weight AI & Local Inference: Google Gemma 2 (9B)
+For users requiring complete data privacy (e.g., handling confidential field data, student assessments, or unpublished research), I built an exportable agent workflow using **Google Gemma 2 (9B)** running locally via **Ollama**:
+- **Workflow File**: [`n8n/academ_ai_workflow_gemma.json`](https://github.com/yandri918/academic_ai/blob/main/n8n/academ_ai_workflow_gemma.json)
+- **Harness**: n8n visual agent workflow powered by LangChain memory buffers and code nodes.
+- **Inference**: 100% local, air-gapped, zero telemetry.
+- **Integration**: Connected to the open **Semantic Scholar API** for live peer-reviewed journal retrieval.
 
-### The Build Story — From PAUD to Universal
-
-My wife is completing her **S1 PAUD** thesis on play-based learning methods and their effect on children's motor and cognitive development. She needed to:
-- Cite 15+ journals (Piaget, Vygotsky, STPPA Permendikbudristek No. 5/2022) in APA 7th format
-- Interpret N-Gain scores from her classroom action research (PTK — Penelitian Tindakan Kelas)
-- Keep Turnitin similarity below 15%
-- Write a full Bab I–V document, including a rubric using the BB/MB/BSH/BSB national PAUD standard
-
-Every evening I saw the same frustration: AI tools that fabricated Piaget citations, paywalled journals, and statistical output she couldn't translate into academic Indonesian. So I built her a tool.
-
-**Phase 1**: Simple Express server + Gemini, system prompt hardcoded for PAUD (Piaget, Vygotsky, STPPA, PTK methodology, BB/MB/BSH/BSB rubric).
-
-**Phase 2**: Added Google Scholar grounding — every AI response is now anchored in real papers. Added Citation Validator — cross-references every detected APA citation against academic indices.
-
-**Phase 3**: Realized: *if this helps my wife, it could help any student.* Refactored the single hardcoded PAUD prompt into the **DISCIPLINES registry** — 12 disciplines, each with its own persona, theories, and methodology. PAUD is still #1. Eleven more joined it.
-
-**Phase 4**: Added open-weight local inference option using **Google Gemma 2 (9B)** via Ollama in an n8n visual agent workflow (`/n8n/academ_ai_workflow_gemma.json`) for users needing offline privacy.
-
-**Phase 5**: Statistics Engine (PTK Paired t-Test + N-Gain), DOCX exporter, DataViz MCP Server, rate limiting, Docker containerization, and Railway deployment.
-
-### Challenges Overcome
-
-**🔴 AI hallucinating citations**: Every response is grounded in real Google Scholar / Semantic Scholar results injected as context. The Citation Validator then post-processes the output, flagging anything unverified.
-
-**🔴 PAUD-only bias**: Original prompt was perfectly tuned for my wife's needs, but useless for anyone else. The DISCIPLINES registry solved this — now the entire AI context switches dynamically across 12 faculties.
-
-**🔴 Hardware inequality**: Open-weight models are amazing, but running 9B+ parameters locally requires 12GB+ RAM/VRAM. My wife's 5-year-old laptop couldn't handle it. That's why we built a hybrid system: lightweight web client on Gemini for low-end devices, plus a local Gemma 2 workflow for privacy-conscious users with GPUs.
-
-**🔴 Cost explosion risk**: Added `express-rate-limit` (30 requests per 10 minutes per IP). Even during high hackathon traffic, the Gemini API stays well within free quotas.
+### 2. Open-Source Agent Harness: Node.js / Express
+For everyday accessibility on lightweight devices, I built a custom, framework-independent agent harness in Node.js (MIT License):
+- **Live Search Grounding**: Integrates live Google Scholar and Semantic Scholar search results into the prompt context before inference.
+- **Intelligent Fallback Chain**: Features an automated multi-model cascade with Google Gemini (`gemini-3.1-flash-lite` → `gemini-3.5-flash-lite` → `gemini-3.7-flash` → `gemini-3.8-flash`) to ensure zero downtime during traffic spikes or rate limits.
+- **Pure JavaScript Statistics Engine**: Calculates sample mean differences, pooled variances, degrees of freedom, t-statistics, and Hake (1999) normalized gain categories (`Tinggi`, `Sedang`, `Rendah`) without any third-party dependencies.
+- **Document Exporter**: Compiles structured Markdown research chapters into formatted `.docx` files via the open-source `docx` library.
+- **Containerized Deployment**: Packaged in an Alpine Linux Docker container (`node:20-alpine`) deployed to Railway.
 
 ---
 
 ## Why Does Open Innovation Matter?
 
-### Addressing the Core Question: Open-Weight Models vs. Partner APIs
+<!-- Why does open innovation matter for what you built?  What did it make possible that a closed API wouldn't? -->
 
-The Hacktoberfest challenge specifically explores how open-source AI empowers builders. Here is our honest, practical philosophy behind AcademAI:
+### 1. Inclusion Over Gatekeeping: Supporting Developing World Students
+There are over **8 million university students across Indonesia**. Most students in regional universities study on 5-to-8-year-old budget laptops or smartphones. 
+- Closed, proprietary academic AI tools charge **$20 to $30 per month** — completely prohibitive for students in developing nations.
+- At the same time, forcing students to rely *strictly* on local open-weight inference would exclude my wife and millions like her whose hardware cannot run a 7B or 9B model without overheating.
+- **Open innovation bridged this divide**: by combining an open-source MIT-licensed agent harness, open academic search APIs (Semantic Scholar / Google Scholar), and Gemini's generous free-tier API, we delivered enterprise-grade research tooling at **zero cost** to the end user.
 
-**1. Open-Source Agent Harnesses Democratize Capability**
-The real intellectual property of AcademAI isn't a proprietary model — it is the **open-source orchestration logic**:
-- The **DISCIPLINES Registry**: 12 modular academic frameworks that transform general LLMs into rigorous academic supervisors.
-- The **Citation Validator**: A standalone algorithm that parses APA/DOI citations and audits them against open academic databases.
-- The **Statistics Engine**: Pure, dependency-free JavaScript computing Paired t-Tests and Hake (1999) N-Gains with automated Indonesian pedagogical prose.
+### 2. Modularity & Zero Vendor Lock-In
+Because AcademAI's agent harness, prompt routing, and validation logic are 100% open-source, the project is completely decoupled from any single LLM provider:
+- A user can run it completely offline with **Google Gemma 2** on Ollama.
+- A user can deploy it to the cloud using **Google Gemini**.
+- Anyone can fork the repository and plug in Llama 3, Mistral, or a self-hosted vLLM instance by changing a single endpoint function.
 
-Because this harness is 100% open-source (MIT), anyone can swap the backend in minutes — whether pointing to Gemini, Claude, OpenAI, or a local **Gemma 2 / Llama 3** instance.
-
-**2. Open-Weight Innovation (Gemma 2)**
-For institutions, researchers, or students working with sensitive empirical data (e.g., student assessment scores, confidential survey answers), we built the **Gemma 2 edition** (`n8n/academ_ai_workflow_gemma.json`). Google's open-weight Gemma 2 model can be run entirely air-gapped on consumer hardware via Ollama. No subscription, no telemetry, no leaks.
-
-**3. Pragmatic Inclusivity for Indonesian Students**
-Indonesia has **8 million university students**, the vast majority studying on budget laptops or mobile phones without dedicated GPUs. If an academic tool *strictly* required running an open-weight model locally, 90% of students would be excluded. 
-
-By combining:
-- A completely open, forkable codebase (MIT),
-- An open-weight pipeline (Gemma 2), and
-- A cloud deployment powered by Google Gemini's generous free tier,
-
-AcademAI proves that open innovation isn't just about model weights — it's about eliminating gatekeeping so that a student in Banyumas, Surabaya, or Jayapura has the exact same research firepower as an Ivy League scholar.
+### 3. Transparent, Verifiable Academic Rigor
+In academic research, black-box AI is dangerous because it fabricates truth. Open innovation allowed us to write transparent algorithms for citation validation and statistical analysis. Students and academic advisors can inspect every formula, prompt rule, and validation check directly on GitHub.
 
 ---
 
 ## My Agent Session
 
-AcademAI was built with the help of **Antigravity IDE** (Google DeepMind's agentic coding assistant). The session involved:
+<!-- Optional, but judges love it.  Save your session with DevRelay and embed it with the agent_session tag (see the challenge page), or link to it. -->
 
-- Iteratively refactoring `server.js` from a PAUD-only hardcoded app into a 12-discipline universal academic engine
-- Real-time debugging of the multi-model Gemini fallback chain
-- Live deployment verification via Railway CLI (`railway up --detach`)
-- Each feature built, tested, and deployed incrementally: citation validator → statistics engine → plagiarism checker → DISCIPLINES registry
+AcademAI was engineered with the assistance of **Antigravity IDE** (Google DeepMind's agentic pair-programming system). 
+
+Throughout the session, the agent and I:
+- Transformed an initial single-file prototype into a multi-disciplinary academic engine supporting 12 faculties.
+- Built and debugged the zero-dependency statistical calculation engine for Classroom Action Research (PTK) and Hake's N-Gain formulas.
+- Implemented real-time citation extraction and verification algorithms.
+- Configured Docker packaging and deployed the service live to Railway with automated health checks.
 
 ---
 
 ## Prize Categories
 
-- **🤖 Google Gemini**: Built on Google Gemini API with a 4-model intelligent fallback chain (Gemini 3.1 Flash Lite → Gemini 3.5 Flash Lite → Gemini 3.7 Flash → Gemini 3.8 Flash) for fast, free-tier accessible academic generation, plus complementary local Google Gemma 2 (9B) open-weight support.
-- **🏆 Best Open Source Tool**: 100% MIT-licensed agent harness, DISCIPLINES registry (12 faculties), Citation Validator, Statistics Engine, and vanilla frontend — completely forkable, self-hostable, and adaptable to any university curriculum in the world.
+<!-- Which partner categories are you entering?  List every one that applies, or remove this section. -->
 
----
+- **Google Gemini**: AcademAI integrates Google Gemini via a smart 4-tier model fallback chain (`gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-3.7-flash`, and `gemini-3.8-flash`) combined with the open-weight **Google Gemma 2** model for offline privacy workflows.
+- **Best Open Source Tool**: The entire agent harness, 12-discipline prompt registry, citation verification engine, statistics calculator, and vanilla web interface are 100% MIT-licensed, modular, and freely reproducible by students and educators worldwide.
 
-> **Deadline**: Submissions close October 5, 2026 at 6:59 AM UTC
+<!-- Team Submissions: Please pick one member to publish the submission and credit teammates by listing their DEV usernames directly in the body of the post. -->
 
----
-
-*Built with ❤️ for my wife — and every student in Indonesia staring at a blank thesis document at 2am.*
-
-**GitHub**: https://github.com/yandri918/academic_ai
-**Live Demo**: https://academicai-production-a41d.up.railway.app
+<!-- Thanks for participating! -->
