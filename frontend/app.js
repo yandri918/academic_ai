@@ -461,6 +461,8 @@ function renderOutputContent(markdown) {
   // Show toolbar actions
   document.getElementById('copy-btn').style.display = '';
   document.getElementById('download-btn').style.display = '';
+  const docxBtn = document.getElementById('download-docx-btn');
+  if (docxBtn) docxBtn.style.display = '';
   const saveMemBtn = document.getElementById('save-mem-btn');
   const continueBtn = document.getElementById('continue-chat-btn');
   if (saveMemBtn) saveMemBtn.style.display = '';
@@ -560,6 +562,8 @@ function resetGenerate() {
     </div>`;
   document.getElementById('copy-btn').style.display = 'none';
   document.getElementById('download-btn').style.display = 'none';
+  const docxBtn = document.getElementById('download-docx-btn');
+  if (docxBtn) docxBtn.style.display = 'none';
   const saveMemBtn = document.getElementById('save-mem-btn');
   const continueBtn = document.getElementById('continue-chat-btn');
   if (saveMemBtn) saveMemBtn.style.display = 'none';
@@ -588,6 +592,54 @@ function downloadOutput() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast(`Didownload: ${filename}`, 'success');
+}
+
+async function downloadOutputDocx() {
+  if (!generateOutputRaw) return;
+  const topic = document.getElementById('gen-topic').value.trim() || 'Naskah_Akademik';
+  const cleanTopic = topic.slice(0, 50).replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_') || 'Dokumen_Skripsi';
+  const filename = `AcademAI_${cleanTopic}_${new Date().toISOString().split('T')[0]}.docx`;
+
+  const btn = document.getElementById('download-docx-btn');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Membuat Word...`;
+  }
+
+  try {
+    const res = await fetch('/api/export/docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: topic,
+        content: generateOutputRaw
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast(`📥 Dokumen Word berhasil didownload: ${filename}`, 'success');
+  } catch (e) {
+    toast(`Gagal download Word: ${e.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
 }
 
 // ── Citation Validator ───────────────────────
@@ -857,6 +909,9 @@ function renderMemoryModalList() {
           <button class="btn btn-secondary btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'abstract')">
             📑 Buat Abstrak
           </button>
+          <button class="btn btn-primary btn-xs" style="background:#1e40af;border-color:#3b82f6;" onclick="exportMemoryDocToDocx('${doc.id}')" title="Download naskah dalam format Word (.docx) standar 4-3-3-3 cm">
+            📥 Word (.docx)
+          </button>
           <button class="btn btn-ghost btn-xs" onclick="previewMemoryDoc('${doc.id}')">
             👀 Pratinjau
           </button>
@@ -1049,6 +1104,35 @@ function previewMemoryDoc(docId) {
   const doc = state.memoryDocuments.find(d => d.id === docId);
   if (!doc) return;
   alert(`=== ${doc.title} (${doc.wordCount} kata) ===\n\n` + doc.content.substring(0, 1000) + (doc.content.length > 1000 ? '\n\n...(Dipotong untuk pratinjau ringkas)' : ''));
+}
+
+async function exportMemoryDocToDocx(docId) {
+  const doc = state.memoryDocuments.find(d => d.id === docId);
+  if (!doc) return;
+
+  toast(`⏳ Menyusun dokumen Word untuk "${doc.title}"...`, 'info', 2000);
+  try {
+    const res = await fetch(`/api/export/docx/${encodeURIComponent(state.sessionId)}/${encodeURIComponent(docId)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const cleanTitle = (doc.title || 'Dokumen').slice(0, 50).replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_');
+    const filename = `${cleanTitle}.docx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast(`📥 Dokumen Word berhasil didownload: ${filename}`, 'success');
+  } catch (e) {
+    toast(`Gagal download Word: ${e.message}`, 'error');
+  }
 }
 
 // ── PDF Upload & Ingestion Handlers ──────────────

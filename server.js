@@ -6,6 +6,17 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { createRequire } from 'module';
+import {
+  Document,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  Packer
+} from 'docx';
 
 const require = createRequire(import.meta.url);
 const { PDFParse } = require('pdf-parse');
@@ -956,11 +967,240 @@ Kembalikan HANYA format JSON valid tanpa tanda kutip markdown pembungkus (tanpa 
   }
 }
 
+// ── Microsoft Word (.docx) Academic Document Generator ──
+function parseFormattedRuns(text) {
+  const runs = [];
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+  for (const part of parts) {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      runs.push(new TextRun({
+        text: part.slice(2, -2),
+        bold: true,
+        font: 'Times New Roman',
+        size: 24 // 12pt
+      }));
+    } else if (part.startsWith('*') && part.endsWith('*')) {
+      runs.push(new TextRun({
+        text: part.slice(1, -1),
+        italics: true,
+        font: 'Times New Roman',
+        size: 24
+      }));
+    } else if (part) {
+      runs.push(new TextRun({
+        text: part,
+        font: 'Times New Roman',
+        size: 24
+      }));
+    }
+  }
+  return runs.length > 0 ? runs : [new TextRun({ text, font: 'Times New Roman', size: 24 })];
+}
+
+async function markdownToDocx(title, markdownContent) {
+  const lines = (markdownContent || '').split('\n');
+  const children = [];
+
+  // Top Title
+  if (title) {
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200, after: 300, line: 360 }, // 1.5 spacing
+      children: [
+        new TextRun({
+          text: title.toUpperCase(),
+          bold: true,
+          font: 'Times New Roman',
+          size: 28, // 14pt
+        })
+      ]
+    }));
+  }
+
+  let inTable = false;
+  let tableRows = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+
+    // Table rows: | col 1 | col 2 |
+    if (line.startsWith('|') && line.endsWith('|')) {
+      if (line.match(/^\|[\s\-:|]+\|$/)) {
+        continue; // separator
+      }
+      inTable = true;
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      const isHeaderRow = tableRows.length === 0;
+
+      tableRows.push(new TableRow({
+        children: cells.map(cellText => new TableCell({
+          width: { size: Math.floor(9000 / (cells.length || 1)), type: WidthType.DXA },
+          shading: isHeaderRow ? { fill: 'E2E8F0' } : undefined,
+          children: [
+            new Paragraph({
+              spacing: { before: 60, after: 60, line: 240 },
+              children: [
+                new TextRun({
+                  text: cellText,
+                  bold: isHeaderRow,
+                  font: 'Times New Roman',
+                  size: 20, // 10pt
+                })
+              ]
+            })
+          ]
+        }))
+      }));
+      continue;
+    } else if (inTable) {
+      if (tableRows.length > 0) {
+        children.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: tableRows
+        }));
+        children.push(new Paragraph({ spacing: { after: 120 } }));
+      }
+      inTable = false;
+      tableRows = [];
+    }
+
+    if (!line) continue;
+
+    // Heading 1 (# ...)
+    if (line.startsWith('# ')) {
+      const headingText = line.replace(/^#\s+/, '').trim();
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 360, after: 180, line: 360 },
+        children: [
+          new TextRun({
+            text: headingText.toUpperCase(),
+            bold: true,
+            font: 'Times New Roman',
+            size: 28, // 14pt
+          })
+        ]
+      }));
+    }
+    // Heading 2 (## ...)
+    else if (line.startsWith('## ')) {
+      const headingText = line.replace(/^##\s+/, '').trim();
+      children.push(new Paragraph({
+        spacing: { before: 240, after: 120, line: 360 },
+        children: [
+          new TextRun({
+            text: headingText,
+            bold: true,
+            font: 'Times New Roman',
+            size: 24, // 12pt
+          })
+        ]
+      }));
+    }
+    // Heading 3 (### ...)
+    else if (line.startsWith('### ')) {
+      const headingText = line.replace(/^###\s+/, '').trim();
+      children.push(new Paragraph({
+        spacing: { before: 180, after: 80, line: 360 },
+        children: [
+          new TextRun({
+            text: headingText,
+            bold: true,
+            font: 'Times New Roman',
+            size: 24, // 12pt
+          })
+        ]
+      }));
+    }
+    // Bullet list
+    else if (line.match(/^[-*]\s+/)) {
+      const itemText = line.replace(/^[-*]\s+/, '').trim();
+      children.push(new Paragraph({
+        bullet: { level: 0 },
+        spacing: { before: 40, after: 40, line: 360 },
+        children: parseFormattedRuns(itemText)
+      }));
+    }
+    // Normal Paragraph
+    else {
+      children.push(new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        indent: { firstLine: 567 }, // 1 cm first-line indent
+        spacing: { before: 60, after: 120, line: 360 }, // 1.5 line spacing
+        children: parseFormattedRuns(line)
+      }));
+    }
+  }
+
+  if (inTable && tableRows.length > 0) {
+    children.push(new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: tableRows
+    }));
+  }
+
+  // Indonesian Thesis Margins: Left 4cm, Top 3cm, Right 3cm, Bottom 3cm
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: 1701,    // 3 cm
+            left: 2268,   // 4 cm (ruang jilid skripsi)
+            right: 1701,  // 3 cm
+            bottom: 1701  // 3 cm
+          }
+        }
+      },
+      children
+    }]
+  });
+
+  return await Packer.toBuffer(doc);
+}
+
 // Endpoint routes
 app.post('/webhook/academ-ai', handleGeneration);
 app.post('/api/generate', handleGeneration);
 app.post('/api/validate', handleCitationValidator);
 app.post('/api/plagiarism/check', handlePlagiarismCheck);
+
+// Export DOCX Endpoints
+app.post('/api/export/docx', async (req, res) => {
+  try {
+    const { title = 'Naskah_Akademik', content = '' } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ success: false, error: 'Konten tidak boleh kosong' });
+    }
+    const buffer = await markdownToDocx(title, content);
+    const cleanFilename = (title || 'Naskah_Akademik').slice(0, 50).replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_') || 'Dokumen_Skripsi';
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}.docx"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('[Export DOCX Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/export/docx/:sessionId/:docId', async (req, res) => {
+  try {
+    const { sessionId, docId } = req.params;
+    const docs = getSessionDocuments(sessionId);
+    const doc = docs.find(d => d.id === docId);
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Dokumen tidak ditemukan dalam memori.' });
+    }
+    const buffer = await markdownToDocx(doc.title, doc.content);
+    const cleanFilename = (doc.title || 'Dokumen').slice(0, 50).replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().replace(/\s+/g, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}.docx"`);
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log('========================================================');
