@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 import { createRequire } from 'module';
 import {
   Document,
@@ -37,6 +38,20 @@ const upload = multer({
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+app.set('trust proxy', 1);
+
+// Production Security: Rate Limiting to prevent budget explosion
+const aiLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 menit
+  max: 30, // Maksimal 30 request AI per 10 menit per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Terlalu banyak permintaan generate AI dari IP Anda. Demi keamanan kuota, silakan tunggu beberapa saat.'
+  }
+});
+app.use(['/api/generate', '/webhook/academ-ai', '/api/plagiarism/check'], aiLimiter);
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'frontend')));

@@ -1,29 +1,32 @@
 # ============================================
-# AcademAI — n8n Railway Deployment
-# Image: n8nio/n8n (official)
+# AcademAI — Production Dockerfile for Railway
+# Runs the unified Academic AI Engine & Web Interface
 # ============================================
-FROM n8nio/n8n:latest
+FROM node:20-alpine
 
-USER root
+WORKDIR /app
 
-# Install su-exec or gosu for privilege dropping
-RUN if command -v apk > /dev/null; then \
-        apk add --no-cache su-exec; \
-    elif command -v apt-get > /dev/null; then \
-        apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*; \
-    fi
+# Install curl for healthcheck
+RUN apk add --no-cache curl
 
-# Setup entrypoint script to fix volume permissions on Railway
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Copy dependencies definitions
+COPY package*.json ./
 
+# Install production dependencies
+RUN npm ci --omit=dev
 
-# Expose n8n port
-EXPOSE 5678
+# Copy all application code
+COPY . .
+
+# Ensure storage directories exist
+RUN mkdir -p /app/data /app/exports /app/uploads
+
+# Expose server port (Railway dynamically injects PORT)
+ENV PORT=3000
+EXPOSE 3000
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget -qO- http://localhost:5678/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/healthz || exit 1
 
-ENTRYPOINT ["/entrypoint.sh"]
-
+CMD ["node", "server.js"]
