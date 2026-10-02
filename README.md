@@ -1,190 +1,208 @@
-# ============================================
-# AcademAI v2.0 — README
-# ============================================
+# 🎓 AcademAI — Open-Source Multi-Disciplinary Academic Co-Pilot
 
-# 🎓 AcademAI — AI Scientific Article & Thesis Generator
-### Frontier Edition (Powered by Google Gemini 2.0 & n8n Agent Harness)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Live Demo](https://img.shields.io/badge/demo-online-blue.svg)](https://academicai-production-a41d.up.railway.app)
+[![Health Status](https://img.shields.io/badge/health-200%20OK-success.svg)](https://academicai-production-a41d.up.railway.app/healthz)
+[![Hacktoberfest 2026](https://img.shields.io/badge/Hacktoberfest-2026%20Submission-orange.svg)](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)
 
-> 🎃 **Hacktoberfest 2026 Weekend Challenge Submission**: *Build for a Friend*  
-> **Dedicated to**: Helping my wife complete her undergraduate thesis in Early Childhood Education (S1 PAUD).  
-> **Frontier AI**: Google Gemini 3.8 Flash · n8n Open Agent Harness · Google Scholar · Zotero · Gotenberg  
-> **Version**: 2.0 | **License**: MIT
-
----
-
-## 📁 Struktur Project
-
-```
-academ-ai/
-├── docker-compose.yml              # Stack: n8n + Gotenberg
-├── .env.example                    # Template environment variables
-├── start.ps1                       # Script setup & run otomatis
-├── DEV_SUBMISSION.md               # Naskah submission resmi DEV.to
-├── academic.md                     # Dokumen spesifikasi arsitektur lengkap
-├── n8n/
-│   ├── academ_ai_workflow_gemma.json   # 💎 Workflow Gemma 2 (Open-Weight / Ollama)
-│   ├── academ_ai_workflow_gemini.json  # Workflow Google Gemini API
-│   └── academ_ai_workflow_v2.json      # Workflow Claude Sonnet
-├── frontend/                       # Web UI ringan (HTML5 + Vanilla CSS/JS)
-├── uploads/                        # File / data observasi lokal
-└── exports/                        # Hasil export PDF / DOCX
-```
+> 🎃 **Submission for [Hacktoberfest Weekend Challenge: Build for a Friend](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)**  
+> **Dedicated to**: My wife, finishing her undergraduate thesis in **S1 PAUD (Early Childhood Education)** while caring for our family — and expanded into an open-source research partner for university students across **12 academic disciplines**.
 
 ---
 
-## 🚀 Cara Menjalankan (3 Langkah)
+## 🌐 Live Web Application
 
-### Step 1: Install Docker Desktop
-
-Download dan install dari:
-👉 https://www.docker.com/products/docker-desktop/
-
-Restart komputer setelah install.
+- **Live Production URL**: [https://academicai-production-a41d.up.railway.app](https://academicai-production-a41d.up.railway.app)
+- **Health Check Endpoint**: [https://academicai-production-a41d.up.railway.app/healthz](https://academicai-production-a41d.up.railway.app/healthz)
 
 ---
 
-### Step 2: Isi API Key
+## 💡 The Story Behind AcademAI
 
-```powershell
-# Di folder academ-ai, buka .env.example, salin menjadi .env
-Copy-Item .env.example .env
-notepad .env
-```
+Every evening, I watched my wife sit at our kitchen table overwhelmed by the friction of writing her undergraduate thesis in Early Childhood Education (S1 PAUD). Standard commercial AI tools:
+1. **Fabricated academic sources** (inventing fake citations attributed to Piaget, Vygotsky, or Montessori).
+2. **Knew nothing about local education standards** like Indonesia's **STPPA (Permendikbudristek No. 5/2022)** or national developmental rubrics (**BB / MB / BSH / BSB**).
+3. **Left her stuck on empirical calculations** like Paired Sample t-Tests and Hake's Normalized Gain (**N-Gain**) for Classroom Action Research (PTK).
+4. **Charged expensive subscriptions** ($20+/month) that are unaffordable for most Indonesian students.
 
-Isi nilai berikut di `.env`:
-
-```
-ANTHROPIC_API_KEY=sk-ant-api03-XXXXXXXX    # WAJIB
-SEMANTIC_SCHOLAR_API_KEY=                   # Opsional (gratis tanpa key)
-```
-
-Daftar Anthropic API Key di: https://console.anthropic.com
+**AcademAI** was born to solve these hurdles. Once it succeeded for my wife, I refactored the codebase from a single-faculty tool into a **universal 12-discipline open-source academic engine**.
 
 ---
 
-### Step 3: Jalankan
+## ✨ Key Capabilities
 
-```powershell
-# Jalankan script otomatis
-.\start.ps1
-
-# Atau manual:
-docker-compose up -d
-```
-
----
-
-## 🌐 Akses Dashboard
-
-Setelah container berjalan:
-
-| Service | URL | Auth |
-|---------|-----|------|
-| n8n Dashboard | http://localhost:5678 | admin / academ2024 |
-| Gotenberg | http://localhost:3001 | - |
+| Module | What It Does |
+|---|---|
+| 🔍 **Google Scholar Grounding** | Automatically searches authentic scholarly literature via SerpApi and injects verified findings into the prompt context to prevent hallucinations. |
+| 🛡️ **Citation Validator** | RegEx-based auditing engine that validates in-text citations (APA 7th) and DOI links against academic indices (`VALID`, `PARTIAL`, `INVALID`). |
+| 📊 **PTK Statistics Engine** | Pure JavaScript mathematical engine calculating Paired Sample t-Tests, degrees of freedom, and Hake (1999) N-Gain categories with automated Indonesian pedagogical prose for Bab IV. |
+| 🔄 **Plagiarism Auditor** | Turnitin-style similarity auditor with academic sentence restructuring (nominalization, passive-voice conversion) targeting <15% similarity. |
+| 📑 **Full Thesis Generator** | Drafts complete 5-chapter research documents with bilingual abstracts (Indonesian + English), research matrix, and APA bibliographies in one request. |
+| 💾 **Document Memory** | Local JSON session memory (`./data/memory.json`) preserving research variables, uploaded documents, and hypotheses across sessions. |
+| 📄 **Native DOCX Export** | Compiles structured research chapters directly into formatted Microsoft Word (`.docx`) files using the open-source `docx` library. |
 
 ---
 
-## 📥 Import Workflow ke n8n
+## 🏛️ Supported Academic Disciplines (12 Faculties)
 
-1. Buka http://localhost:5678
-2. Login: **admin** / **academ2024**
-3. Klik menu **≡** → **Workflows** → **Import from file**
-4. Pilih: `n8n/academ_ai_workflow_v2.json`
-5. Masuk ke node **🤖 Claude Sonnet Model**
-6. Klik **+ Add credential** → pilih **Anthropic API**
-7. Masukkan API Key Anthropic Anda
-8. Klik tombol **Active** (toggle di kanan atas) untuk mengaktifkan workflow
-9. Salin Webhook URL yang muncul
+AcademAI's **DISCIPLINES Registry** dynamically injects domain-specific theories and empirical methodologies:
 
----
-
-## 🧪 Test API
-
-### Chat Biasa (Mode Drafting)
-```powershell
-$body = '{"sessionId":"test_001","mode":"drafting","discipline":"economics","message":"Bantu tulis latar belakang tentang UMKM digital di Banyumas"}'
-Invoke-RestMethod -Uri "http://localhost:5678/webhook/academ-ai" -Method POST -Body $body -ContentType "application/json"
-```
-
-### Generate Full Dokumen
-```powershell
-$body = @{
-  sessionId = "banyumas_001"
-  action = "generate_full"
-  mode = "drafting"
-  topic = "Pengaruh Aplikasi Digital terhadap UMKM di Tengah Meningkatnya Minimarket Modern: Studi Kasus Kabupaten Banyumas"
-  discipline = "economics"
-  language = "indonesia"
-  options = @{
-    journalCount = 15
-    yearFilter = "2019-2024"
-    runCitationValidator = $true
-  }
-} | ConvertTo-Json -Depth 5
-
-Invoke-RestMethod -Uri "http://localhost:5678/webhook/academ-ai" -Method POST -Body $body -ContentType "application/json"
-```
-
-### Validate Citations
-```powershell
-$body = '{"sessionId":"test_001","action":"validate_citations","content":"Menurut Santoso et al. (2023) dan Wijaya (2021) digitalisasi UMKM..."}'
-Invoke-RestMethod -Uri "http://localhost:5678/webhook/academ-ai" -Method POST -Body $body -ContentType "application/json"
-```
-
-### Mode SLR
-```powershell
-$body = '{"sessionId":"test_001","mode":"SLR","message":"Buat tabel penelitian terdahulu: digital UMKM Indonesia 2020-2024"}'
-Invoke-RestMethod -Uri "http://localhost:5678/webhook/academ-ai" -Method POST -Body $body -ContentType "application/json"
-```
+1. 🧸 **PAUD (Early Childhood Education)**: Piaget, Vygotsky, Montessori, STPPA Permendikbudristek No. 5/2022, PTK Kemmis & McTaggart, BB/MB/BSH/BSB rubrics.
+2. 📚 **Education & Teaching (Keguruan)**: Behaviorism (Skinner), Constructivism, Kurikulum Merdeka, Bloom's Taxonomy, R&D ADDIE / 4D.
+3. 💼 **Economics & Business**: Agency Theory (Jensen & Meckling), Porter's Five Forces, Kotler & Keller, SEM/SmartPLS, Multiple Regression.
+4. ⚖️ **Law & Jurisprudence**: Theories of Justice (Rawls), Legal Certainty (Radbruch), Normative Juridical & Empirical Juridical.
+5. 💻 **Computer Science & IT**: IEEE/ACM standards, SDLC (Agile/Waterfall), Algorithmic Complexity, Usability Testing (SUS).
+6. 🏥 **Health & Nursing**: Evidence-Based Practice (EBP), Bioethics, Epidemiological Designs (Cross-Sectional, Case-Control, Cohort).
+7. 🧠 **Psychology**: Psychometric validation, Social Cognitive Theory, Likert scale construction, Factor Analysis.
+8. ⚙️ **Engineering**: SNI / ISO specifications, Finite Element, Technical design and laboratory testing.
+9. 🌾 **Agriculture & Agrotechnology**: Agronomy, Soil Fertility, Randomized Block Design (RAK / RAL), ANOVA, Duncan Test.
+10. 💬 **Communication Science**: Agenda Setting, Framing Analysis (Entman), Semiotics (Roland Barthes).
+11. 🏛️ **Social & Political Science**: Critical Theory (Habermas), Social Capital (Bourdieu), Public Policy Evaluation.
+12. 🌐 **General Academic**: Philosophy of Science (Ontology, Epistemology, Axiology), PRISMA protocol for Systematic Literature Reviews (SLR).
 
 ---
 
-## ⚙️ Mode Operasi
+## 🏗️ System Architecture
 
-| Mode | Kegunaan |
-|------|----------|
-| `drafting` | Tulis konten baru dari nol |
-| `editing` | Review & perbaiki tulisan |
-| `paraphrasing` | Parafrase untuk hindari plagiat |
-| `SLR` | Systematic Literature Review |
-| `proposal` | Buat proposal penelitian |
-| `abstract` | Abstrak Indonesia + Inggris |
-| `statistics` | Interpretasi hasil SPSS/R |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│     Client Layer: Vanilla HTML5 · CSS3 · ES2022 (Zero Build)     │
+│   5 Academic Tabs: Chat · Generator · Validator · Plag · Stats   │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │ REST API
+┌────────────────────────────────▼────────────────────────────────┐
+│      OPEN-SOURCE AGENT HARNESS (Standalone Node.js / Express)   │
+│                                                                 │
+│   ┌────────────────────────────────────────────────────────┐    │
+│   │  DISCIPLINES Registry (12 Faculties, MIT License)       │    │
+│   │  Dynamic Personas · Theory Guides · Methodology Models │    │
+│   └────────────────────────────┬───────────────────────────┘    │
+│                                │                                │
+│        ┌───────────────────────┼────────────────────────┐       │
+│        ▼                       ▼                        ▼       │
+│ ┌───────────────┐     ┌─────────────────┐     ┌───────────────┐ │
+│ │ Google Gemini │     │ Google Scholar  │     │  Zotero REST  │ │
+│ │ 4-Model Chain │     │ & SerpApi Index │     │  Auto-Sync    │ │
+│ └───────────────┘     └─────────────────┘     └───────────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────┐   ┌───────────────────────────┐ │
+│ │ Pure-JS Statistics Engine   │   │ RegEx Citation Validator  │ │
+│ │ Paired t-Test · Hake N-Gain │   │ APA7 / CrossRef Checker   │ │
+│ └─────────────────────────────┘   └───────────────────────────┘ │
+│                                                                 │
+│ ┌─────────────────────────────┐   ┌───────────────────────────┐ │
+│ │ Persistent Document Memory  │   │ DOCX Academic Exporter    │ │
+│ │ Local JSON Session Storage  │   │ Formatted Word Packaging  │ │
+│ └─────────────────────────────┘   └───────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+             Deployed via Dockerfile → Railway Cloud
+```
+
+### 🧠 Gemini 4-Model Smart Fallback Cascade
+
+To ensure high availability during peak thesis deadlines, `server.js` automatically cascades through Google Gemini tiers:
+1. `gemini-3.1-flash-lite`: Ultra-low latency for definitions and short queries.
+2. `gemini-3.5-flash-lite`: High-efficiency reasoning for literature reviews.
+3. `gemini-3.7-flash`: Balanced speed and academic writing depth.
+4. `gemini-3.8-flash`: Highest quality academic prose for full 5-chapter generation.
 
 ---
 
-## 🛑 Perintah Docker
+## 🚀 Quick Start (Run Locally)
 
-```powershell
-# Jalankan
-docker-compose up -d
+### Prerequisites
+- Node.js >= 20.0.0
+- A Google Gemini API Key ([Get free tier key from Google AI Studio](https://aistudio.google.com/))
+- *(Optional)* SerpApi Key for live Google Scholar queries
 
-# Stop
-docker-compose down
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yandri918/academic_ai.git
+cd academic_ai
+```
 
-# Lihat log
-docker-compose logs -f n8n
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-# Restart
-docker-compose restart n8n
+### 3. Configure Environment Variables
+Create a `.env` file in the root directory:
+```env
+PORT=8080
+GEMINI_API_KEY=your_gemini_api_key_here
+SERPAPI_API_KEY=your_serpapi_key_here       # Optional: for Google Scholar grounding
+ZOTERO_API_KEY=your_zotero_key_here         # Optional: for Zotero sync
+ZOTERO_USER_ID=your_zotero_user_id          # Optional
+```
 
-# Status
-docker-compose ps
+### 4. Start the Application
+```bash
+npm start
+```
+Open your browser at **`http://localhost:8080`**.
+
+---
+
+## 🐳 Docker Deployment
+
+You can also run AcademAI in a self-contained Docker container:
+
+```bash
+# Build Docker image
+docker build -t academ-ai .
+
+# Run container
+docker run -d -p 8080:8080 --env-file .env --name academ-ai-app academ-ai
 ```
 
 ---
 
-## 🆘 Troubleshooting
+## 📡 API Reference
 
-| Masalah | Solusi |
-|---------|--------|
-| Docker tidak bisa start | Pastikan virtualisasi (Hyper-V/WSL2) aktif di BIOS |
-| Port 5678 sudah dipakai | Ganti port di docker-compose.yml |
-| API Key tidak valid | Cek kembali di console.anthropic.com |
-| Workflow tidak aktif | Klik toggle "Active" di kanan atas n8n |
-| Webhook URL tidak muncul | Klik webhook node → salin URL dari modal |
+| Endpoint | Method | Description |
+|---|---|---|
+| `/healthz` | `GET` | Health check returning status, active features, and model cascade list. |
+| `/api/generate` | `POST` | Core generation endpoint for Chat, SLR, Proposal, Abstract, Editing, and Paraphrasing. |
+| `/api/citation/validate` | `POST` | Validates in-text citations and DOIs against indexed scholarly databases. |
+| `/api/stats/calculate` | `POST` | Computes Paired Sample t-Test and Hake (1999) N-Gain from pretest/posttest arrays. |
+| `/api/plagiarism/check` | `POST` | Audits text similarity and generates Turnitin-safe academic rewrites. |
+| `/api/export/docx` | `POST` | Converts Markdown research chapters into a downloadable `.docx` file. |
+| `/api/memory/:sessionId` | `GET` | Retrieves saved documents from the persistent session memory. |
 
 ---
 
-*AcademAI v2.0 — Powered by Claude + n8n*
+## 📁 Repository Structure
+
+```
+academic_ai/
+├── frontend/               # Zero-build Web UI (HTML5, Vanilla CSS, ES2022)
+│   ├── index.html          # Single Page Application layout (5 Tabs)
+│   ├── app.js              # Client-side state & REST API communications
+│   └── style.css           # Premium responsive dark/light styling
+├── data/                   # Persistent local session memory storage
+│   └── memory.json         # Session document persistence
+├── uploads/                # Temporary PDF upload storage
+├── server.js               # Standalone Node.js Agent Harness (MIT)
+├── Dockerfile              # Production Alpine container definition
+├── railway.toml            # Railway Cloud deployment configuration
+├── package.json            # Node.js project manifest & dependencies
+├── DEV_SUBMISSION.md       # Official Hacktoberfest 2026 submission draft
+└── README.md               # Project documentation
+```
+
+---
+
+## 🏆 Hacktoberfest 2026 Partner Categories
+
+- **Google Gemini**: Powered by Google Gemini with an intelligent 4-model fallback cascade (`gemini-3.1-flash-lite` → `gemini-3.5-flash-lite` → `gemini-3.7-flash` → `gemini-3.8-flash`) and open-source discipline-aware prompt engineering.
+- **Best Open Source Tool**: Standalone, 100% MIT-licensed Node.js agent harness, pure JS statistics engine, citation validation parser, and vanilla frontend with zero proprietary lock-in.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE) — free for students, teachers, and researchers worldwide.
+
+*Built with ❤️ for my wife — and every student working hard toward their degree.*
