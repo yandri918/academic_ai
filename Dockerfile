@@ -21,8 +21,8 @@ COPY . .
 # Ensure storage directories exist
 RUN mkdir -p /app/data /app/exports /app/uploads
 
-# Expose default port
-EXPOSE 3000
+# Expose ports for flexible Railway routing
+EXPOSE 3000 5678 8080
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \

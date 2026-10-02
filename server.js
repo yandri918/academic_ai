@@ -1397,3 +1397,13 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`                   Paraphrasing, Editing, Statistics, Validator, Plagiarism`);
   console.log('========================================================');
 });
+
+// Dual-bind to port 5678 for Railway legacy port routing compatibility
+if (String(PORT) !== '5678') {
+  try {
+    const s5678 = app.listen(5678, '0.0.0.0', () => {
+      console.log('🚀 AcademAI Server dual-bound to port 5678 (Railway compatibility)');
+    });
+    s5678.on('error', () => {});
+  } catch (e) {}
+}
