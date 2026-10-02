@@ -1,8 +1,8 @@
 ---
-title: "AcademAI — An Open-Source Academic Co-Pilot I Built for My Wife's S1 PAUD Thesis"
+title: "AcademAI — I Built an Open-Source Multi-Disciplinary Academic Co-Pilot for My Wife (and Every University Student)"
 published: true
 tags: hacktoberfest, ai, opensource, webdev
-description: "A lightweight, standalone open-source agent harness built with Node.js and Google Gemini to help my wife complete her early childhood education (S1 PAUD) undergraduate thesis."
+description: "An open-source academic co-pilot built with a lightweight Node.js agent harness and Google Gemini — born out of my wife's S1 PAUD thesis, expanded into a universal engine across 12 academic disciplines."
 ---
 
 *This is a submission for the [Hacktoberfest Weekend Challenge: Build for a Friend](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)*
@@ -13,7 +13,7 @@ description: "A lightweight, standalone open-source agent harness built with Nod
 
 I built **AcademAI** for someone very close to my heart: **my wife**. 
 
-She is currently finishing her undergraduate thesis in **S1 PAUD (Pendidikan Anak Usia Dini — Early Childhood Education)** in Indonesia while managing our home and daily family life. Every evening, I would sit beside her at the kitchen table and watch her struggle with the overwhelming friction of academic writing:
+She is currently finishing her undergraduate thesis in **S1 PAUD (Pendidikan Anak Usia Dini — Early Childhood Education)** in Indonesia while also managing our home and daily family life. Every evening, I would sit beside her at the kitchen table and watch her struggle with the overwhelming friction of academic writing:
 
 - **AI Hallucinations**: General AI chatbots repeatedly hallucinated scientific literature — inventing non-existent papers attributed to Jean Piaget, Lev Vygotsky, and Maria Montessori.
 - **Painful Citation Cross-Checking**: Verifying whether citations were genuine and formatted properly in APA 7th took hours of manual cross-referencing across journals.
@@ -21,15 +21,35 @@ She is currently finishing her undergraduate thesis in **S1 PAUD (Pendidikan Ana
 - **Classroom Action Research (PTK) Statistics**: In her action research, computing paired sample t-tests and Hake's Normalized Gain (**N-Gain**), then translating numeric output into formal Indonesian academic prose for Chapter IV (Bab IV) was a constant source of stress.
 - **Turnitin Anxiety**: Meeting strict university plagiarism thresholds (<15%) required exhausting manual structural paraphrasing.
 
-### What AcademAI Does to Solve This
+### From One Thesis to a Universal 12-Discipline Platform
 
-**AcademAI** is an open-source, multi-disciplinary academic research and writing co-pilot:
+Once AcademAI solved these hurdles for my wife, I asked myself: *Why stop at Early Childhood Education?* 
 
-1. **Grounding in Real Scientific Literature**: Rather than letting the LLM invent sources, AcademAI performs real-time queries against **Google Scholar**, grounding generated text in verified, indexed publications.
-2. **Automated Citation Validator**: A built-in auditing engine parses in-text citations and DOI links, cross-checking them against scholarly databases and outputting clear verification badges (`VALID`, `PARTIAL`, or `INVALID`).
-3. **Zero-Dependency Statistics Engine**: Computes Paired t-Tests and Hake (1999) N-Gain categories (`Tinggi`, `Sedang`, `Rendah`) from raw pretest/posttest scores and automatically generates publishable Indonesian academic analysis ready to insert into Bab IV.
-4. **Academic Paraphrasing & Plagiarism Auditor**: Employs syntactic nominalization and passive-voice academic transformations to safely lower Turnitin similarity while preserving original scientific meaning.
-5. **From PAUD to 12 Disciplines**: While born out of my wife's PAUD thesis, I open-sourced the underlying **DISCIPLINES Registry** with 12 distinct academic faculties (PAUD, Education, Economics, Law, Health, Computer Science, Engineering, Psychology, Agriculture, etc.), empowering any university student to conduct rigorous research.
+Every undergraduate and master's student in Indonesia faces this exact same friction, whether they are writing a thesis in Economics, Law, Engineering, or Health Sciences. 
+
+I redesigned the system around an open **DISCIPLINES Registry** that dynamically tailors the AI's scientific persona, canonical theories, and research methodology across **12 distinct faculties**:
+
+| Academic Faculty | Embedded Canonical Theories & Standards | Supported Methodologies |
+|---|---|---|
+| 🧸 **PAUD (Early Childhood)** | Piaget, Vygotsky, Montessori, Ki Hajar Dewantara, STPPA Permendikbud No. 5/2022 | PTK (Kemmis & McTaggart), Rubrik BB/MB/BSH/BSB |
+| 📚 **Education & Teaching** | Behaviorism (Skinner), Constructivism, Kurikulum Merdeka, Bloom's Taxonomy | R&D (ADDIE / 4D), Quasi-Experiment, PTK |
+| 💼 **Economics & Business** | Kotler & Keller, Porter's Five Forces, Jensen & Meckling (Agency Theory) | SEM / SmartPLS, Multiple Linear Regression, Classical Assumption |
+| ⚖️ **Law & Jurisprudence** | Theories of Justice, Legal Certainty, Utilitarianism (Bentham) | Normative Juridical, Empirical Juridical, Statutory Approach |
+| 💻 **Computer Science & IT** | IEEE / ACM Guidelines, Software Architecture, Algorithmic Complexity | SDLC (Agile / Waterfall), Usability Testing (SUS), Black-box |
+| 🏥 **Health & Nursing** | Evidence-Based Practice (EBP), Bioethics, Epidemiological Models | Cross-Sectional, Case-Control, Cohort, Clinical Observational |
+| 🧠 **Psychology** | Psychometric Validity, Social Cognitive Theory, Big Five Personality | Scale Development (Likert), Factor Analysis, Experimental Design |
+| ⚙️ **Engineering** | Technical Engineering Standards, SNI / ISO Specifications, Quality Control | Design & Prototyping, Finite Element, Laboratory Testing |
+| 🌾 **Agriculture & Agrotech** | Agronomy, Soil Fertility, Integrated Pest Management (IPM) | Completely Randomized Design (RAL / RAK), ANOVA, Duncan Test |
+| 💬 **Communication Science** | Agenda Setting, Framing Analysis, Cultural Semiotics (Barthes) | Framing Analysis (Entman), Critical Discourse (Fairclough) |
+| 🏛️ **Social & Political Science** | Critical Theory (Habermas), Social Capital (Bourdieu), Public Policy | Phenomenology, Grounded Theory, Evaluative Policy Research |
+| 🌐 **General Academic** | Philosophy of Science (Ontology, Epistemology, Axiology), PRISMA Protocol | Universal IMRaD, Systematic Literature Reviews (SLR) |
+
+### Core Feature Capabilities
+- **Grounding in Real Scientific Literature**: Injects real-time queries against **Google Scholar**, grounding every paragraph in verified, indexed papers.
+- **Automated Citation Validator**: Parses in-text citations and DOI links, cross-checking them against scholarly indices and outputting validation badges (`VALID`, `PARTIAL`, or `INVALID`).
+- **Zero-Dependency Statistics Engine**: Computes Paired t-Tests and Hake (1999) N-Gain categories (`Tinggi`, `Sedang`, `Rendah`) from raw pretest/posttest scores and automatically generates publishable Indonesian academic analysis ready to insert into Bab IV.
+- **Academic Paraphrasing & Plagiarism Auditor**: Employs syntactic nominalization and passive-voice academic transformations to safely lower Turnitin similarity (<15%) while preserving original scientific meaning.
+- **Full Thesis Generator**: Produces an end-to-end 5-chapter draft with a bilingual abstract (Indonesian + English), research matrix, and APA 7th bibliography in a single pass.
 
 ---
 
@@ -42,11 +62,11 @@ She is currently finishing her undergraduate thesis in **S1 PAUD (Pendidikan Ana
 
 ### How to Explore the 5 Dedicated Academic Modules:
 
-1. **Tab 1 — Chat & Drafting**: Select **Pendidikan Anak Usia Dini (PAUD)** or any of the 12 disciplines, choose your research workflow (*Drafting, Systematic Literature Review, Proposal, Abstract, or Statistics*), and ask a question. Notice how every output cites real, indexed papers retrieved on the fly.
-2. **Tab 2 — Full Thesis Generator**: Input a thesis topic (e.g., *"Efektivitas Media Loose Parts terhadap Kemampuan Berpikir Kritis Anak Usia 5-6 Tahun"*). AcademAI produces a complete 5-chapter draft with a bilingual abstract, theoretical framework, research synthesis matrix, and APA 7th bibliography.
-3. **Tab 3 — Citation Validator**: Paste any academic paragraph containing in-text citations (such as `(Piaget, 1976)` or `(Sujiono, 2021)`) to receive an instant line-by-line validation audit (`VALID`, `PARTIAL`, or `INVALID`).
+1. **Tab 1 — Chat & Drafting**: Select any of the **12 disciplines** (PAUD, Economics, Law, Health, etc.), choose your research workflow (*Drafting, Systematic Literature Review, Proposal, Abstract, or Statistics*), and ask a question. Notice how every output cites real, indexed papers retrieved on the fly.
+2. **Tab 2 — Full Thesis Generator**: Input a thesis topic (e.g., *"Pengaruh Literasi Keuangan Terhadap Kinerja UMKM"* or *"Efektivitas Media Loose Parts Pada Perkembangan Kognitif Anak"*). AcademAI produces a complete 5-chapter draft tailored to that discipline's research standards.
+3. **Tab 3 — Citation Validator**: Paste any academic paragraph containing in-text citations (such as `(Piaget, 1976)` or `(Kotler, 2021)`) to receive an instant line-by-line validation audit (`VALID`, `PARTIAL`, or `INVALID`).
 4. **Tab 4 — Plagiarism Auditor**: Paste existing text to inspect potential similarity hotspots and generate Turnitin-compliant academic paraphrasing.
-5. **Tab 5 — Statistics Engine**: Enter classroom pretest and posttest scores to compute Paired Sample t-Tests, degrees of freedom, and Hake (1999) N-Gain categories, accompanied by formal Indonesian academic prose ready for Bab IV.
+5. **Tab 5 — Statistics Engine**: Enter classroom or experimental pretest/posttest scores to compute Paired Sample t-Tests, degrees of freedom, and Hake (1999) N-Gain categories, accompanied by formal Indonesian academic prose ready for Bab IV.
 
 **Health Check Verification:**
 ```bash
@@ -124,7 +144,7 @@ curl -s https://academicai-production-a41d.up.railway.app/healthz
 
 ### Core Code Snippet: The 12-Discipline Prompt Orchestrator
 
-The foundational open-source component in `server.js` is the modular `DISCIPLINES` registry, which switches scientific personas and research methodologies on the fly:
+The foundational open-source component in `server.js` is the modular `DISCIPLINES` registry, which switches scientific personas, theories, and research methodologies dynamically:
 
 ```javascript
 // server.js (MIT Licensed)
@@ -139,7 +159,21 @@ STPPA (Permendikbudristek No. 5/2022: 6 Aspek Perkembangan).`,
     methodGuide: `Metodologi: PTK model Kemmis & McTaggart (Planning, Acting, Observing, Reflecting), 
 Rubrik Standar: BB(1), MB(2), BSH(3), BSB(4). Target ketuntasan klasikal >= 75-80%.`
   },
-  // + 11 other faculties: education, economics, law, computer_science, engineering, health, etc.
+  economics: {
+    name: 'Ilmu Ekonomi & Bisnis',
+    searchSuffix: 'jurnal ekonomi manajemen akuntansi bisnis',
+    persona: 'Co-Pilot Riset Bidang Ilmu Ekonomi, Manajemen, dan Akuntansi',
+    theoryGuide: `Teori Pokok: Agency Theory (Jensen & Meckling), Porter's Five Forces, Kotler & Keller, Signaling Theory.`,
+    methodGuide: `Metodologi: Kuantitatif Asosiatif, Structural Equation Modeling (SEM/SmartPLS), Regresi Linear Berganda.`
+  },
+  law: {
+    name: 'Ilmu Hukum',
+    searchSuffix: 'jurnal ilmu hukum perundang-undangan jurisprudensi',
+    persona: 'Co-Pilot Riset Bidang Ilmu Hukum dan Perundang-undangan',
+    theoryGuide: `Teori Pokok: Teori Keadilan (John Rawls), Teori Kepastian Hukum (Gustav Radbruch), Teori Kemanfaatan.`,
+    methodGuide: `Metodologi: Penelitian Yuridis Normatif (Statute, Conceptual, Case Approach) dan Yuridis Empiris.`
+  },
+  // + 9 other faculties: education, computer_science, engineering, health, psychology, agriculture, etc.
 };
 
 function buildMasterAcademicPrompt(discipline, citationFormat, extraContext) {
