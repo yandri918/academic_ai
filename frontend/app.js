@@ -1384,6 +1384,141 @@ function triggerPlagiarismPdfUpload() {
   triggerPdfUpload();
 }
 
+// ── Academic Statistics Calculator Handlers ────
+let currentStatsResult = null;
+
+function loadSampleStatsData() {
+  const varInput = document.getElementById('stat-var-name');
+  const maxInput = document.getElementById('stat-max-score');
+  const preInput = document.getElementById('stat-pretest');
+  const postInput = document.getElementById('stat-posttest');
+
+  if (varInput) varInput.value = 'Keterampilan Motorik Halus Melalui Media Loose Parts';
+  if (maxInput) maxInput.value = '100';
+  if (preInput) preInput.value = '52, 56, 60, 48, 55, 62, 58, 50, 64, 58, 54, 60, 52, 65, 50, 58, 62, 55, 50, 60';
+  if (postInput) postInput.value = '82, 85, 90, 78, 84, 92, 86, 80, 94, 88, 82, 90, 80, 95, 78, 86, 90, 85, 76, 88';
+
+  toast('Contoh data PAUD (N=20) berhasil dimuat!', 'info', 2000);
+}
+
+async function runStatsCalculation() {
+  const variableName = (document.getElementById('stat-var-name')?.value || 'Kemampuan Siswa').trim();
+  const maxScore = Number(document.getElementById('stat-max-score')?.value) || 100;
+  const preRaw = document.getElementById('stat-pretest')?.value || '';
+  const postRaw = document.getElementById('stat-posttest')?.value || '';
+
+  if (!preRaw.trim() || !postRaw.trim()) {
+    toast('Data Pre-test dan Post-test wajib diisi!', 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('btn-calc-stats');
+  const statusEl = document.getElementById('stat-status-text');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menghitung…`;
+  }
+  if (statusEl) statusEl.textContent = 'Menganalisis data t-test & N-Gain…';
+
+  try {
+    const res = await fetch('/api/stats/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        variableName,
+        maxScore,
+        pretest: preRaw,
+        posttest: postRaw
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Gagal menghitung statistik');
+    }
+
+    currentStatsResult = data;
+
+    // Update UI Summary
+    const summaryWrap = document.getElementById('stats-summary-wrap');
+    const narrativeCard = document.getElementById('stats-narrative-card');
+    const narrativeContent = document.getElementById('stats-narrative-content');
+
+    document.getElementById('stat-res-pre').textContent = data.descriptives.pretest.mean;
+    document.getElementById('stat-res-post').textContent = data.descriptives.posttest.mean;
+    document.getElementById('stat-res-t').textContent = `t = ${data.tTest.tStat}`;
+    document.getElementById('stat-res-p').textContent = `df=${data.tTest.df} (p ${data.tTest.pValue})`;
+    document.getElementById('stat-res-gain').textContent = data.nGain.gainPercent;
+    document.getElementById('stat-res-gain-cat').textContent = `N-Gain: ${data.nGain.category} (${data.nGain.effectiveness})`;
+
+    if (summaryWrap) summaryWrap.classList.remove('hidden');
+    if (narrativeCard) narrativeCard.classList.remove('hidden');
+    if (narrativeContent) narrativeContent.innerHTML = renderMarkdown(data.narrative);
+
+    if (statusEl) statusEl.textContent = `✅ Analisis N=${data.N} selesai`;
+    toast(`Statistik selesai: N-Gain ${data.nGain.gainPercent} (${data.nGain.effectiveness})`, 'success', 3500);
+  } catch (err) {
+    if (statusEl) statusEl.textContent = '❌ Gagal';
+    toast(err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> ⚡ Hitung t-Test &amp; N-Gain`;
+    }
+  }
+}
+
+function clearStatsForm() {
+  const pre = document.getElementById('stat-pretest');
+  const post = document.getElementById('stat-posttest');
+  if (pre) pre.value = '';
+  if (post) post.value = '';
+  document.getElementById('stats-summary-wrap')?.classList.add('hidden');
+  document.getElementById('stats-narrative-card')?.classList.add('hidden');
+  document.getElementById('stat-status-text').textContent = '';
+  currentStatsResult = null;
+  toast('Form statistik dibersihkan', 'info', 1500);
+}
+
+function copyStatsNarrative() {
+  if (!currentStatsResult || !currentStatsResult.narrative) return;
+  navigator.clipboard.writeText(currentStatsResult.narrative)
+    .then(() => toast('Teks pembahasan Bab IV disalin ke clipboard!', 'success', 2500))
+    .catch(() => toast('Gagal menyalin', 'error'));
+}
+
+async function saveStatsToMemory() {
+  if (!currentStatsResult) {
+    toast('Belum ada hasil statistik yang dihitung!', 'warn');
+    return;
+  }
+
+  const title = `Hasil Uji Statistik & N-Gain: ${currentStatsResult.variableName}`;
+  const content = `${currentStatsResult.narrative}\n\n### Rekapitulasi Data Deskriptif:\n- Rata-rata Pretest: ${currentStatsResult.descriptives.pretest.mean} (SD = ${currentStatsResult.descriptives.pretest.sd})\n- Rata-rata Posttest: ${currentStatsResult.descriptives.posttest.mean} (SD = ${currentStatsResult.descriptives.posttest.sd})\n- Paired t-Test: t(${currentStatsResult.tTest.df}) = ${currentStatsResult.tTest.tStat}, p ${currentStatsResult.tTest.pValue}\n- N-Gain Hake (1999): ${currentStatsResult.nGain.meanGain} (${currentStatsResult.nGain.gainPercent}) Kategori ${currentStatsResult.nGain.category} - ${currentStatsResult.nGain.effectiveness}`;
+
+  try {
+    const res = await fetch(CONFIG.MEMORY_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: state.sessionId,
+        title,
+        content,
+        type: 'draft'
+      })
+    });
+
+    if (res.ok) {
+      toast(`✅ "${title}" tersimpan ke Memori Riset!`, 'success', 3000);
+      fetchMemoryDocuments();
+    } else {
+      toast('Gagal menyimpan ke memori', 'error');
+    }
+  } catch (e) {
+    toast(`Error: ${e.message}`, 'error');
+  }
+}
+
 // Wait for DOM + scripts
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

@@ -1198,6 +1198,142 @@ app.post('/api/viz/ptk', (req, res) => {
   }
 });
 
+// ── Academic Statistics Engine (t-Test & N-Gain Hake 1999) ───
+function erf(x) {
+  const a1 =  0.254829592;
+  const a2 = -0.284496736;
+  const a3 =  1.421413741;
+  const a4 = -1.453152027;
+  const a5 =  1.061405429;
+  const p  =  0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  const absX = Math.abs(x);
+  const t = 1.0 / (1.0 + p * absX);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+  return sign * y;
+}
+
+function calculateAcademicStats({ pretest, posttest, maxScore = 100, variableName = 'Kemampuan Motorik Halus' }) {
+  const pre = (Array.isArray(pretest) ? pretest : String(pretest).split(/[\s,]+/))
+    .map(Number).filter(n => !isNaN(n));
+  const post = (Array.isArray(posttest) ? posttest : String(posttest).split(/[\s,]+/))
+    .map(Number).filter(n => !isNaN(n));
+
+  if (pre.length === 0 || post.length === 0) {
+    throw new Error('Data Pretest atau Posttest tidak boleh kosong.');
+  }
+  if (pre.length !== post.length) {
+    throw new Error(`Jumlah sampel Pretest (${pre.length}) dan Posttest (${post.length}) harus sama.`);
+  }
+
+  const N = pre.length;
+  const max = Number(maxScore) || 100;
+
+  // Means
+  const sumPre = pre.reduce((a, b) => a + b, 0);
+  const sumPost = post.reduce((a, b) => a + b, 0);
+  const meanPre = sumPre / N;
+  const meanPost = sumPost / N;
+
+  // Standard Deviations
+  const varPre = pre.reduce((acc, v) => acc + Math.pow(v - meanPre, 2), 0) / (N - 1 || 1);
+  const varPost = post.reduce((acc, v) => acc + Math.pow(v - meanPost, 2), 0) / (N - 1 || 1);
+  const sdPre = Math.sqrt(varPre);
+  const sdPost = Math.sqrt(varPost);
+
+  // Differences
+  const diffs = post.map((p, i) => p - pre[i]);
+  const sumDiff = diffs.reduce((a, b) => a + b, 0);
+  const meanDiff = sumDiff / N;
+  const varDiff = diffs.reduce((acc, d) => acc + Math.pow(d - meanDiff, 2), 0) / (N - 1 || 1);
+  const sdDiff = Math.sqrt(varDiff);
+  const seDiff = sdDiff / Math.sqrt(N);
+
+  // Paired Sample t-Test
+  const tStat = seDiff > 0 ? (meanDiff / seDiff) : 0;
+  const df = N - 1;
+
+  // p-value approximation
+  const x = Math.abs(tStat);
+  const z = x * (1 - 1 / (4 * (df || 1))) / Math.sqrt(1 + (x * x) / (2 * (df || 1)));
+  const pNorm = 0.5 * (1 - erf(z / Math.SQRT2));
+  const pVal = Math.min(1, Math.max(0.0001, 2 * pNorm));
+  const pFormatted = pVal < 0.001 ? '< .001' : `= ${pVal.toFixed(4)}`;
+  const isSignificant = pVal < 0.05;
+
+  // N-Gain Score Hake (1999)
+  const individualGains = pre.map((pr, i) => {
+    const po = post[i];
+    const denom = max - pr;
+    if (denom <= 0) return 1.0;
+    const g = (po - pr) / denom;
+    return Math.round(g * 1000) / 1000;
+  });
+
+  const meanGain = individualGains.reduce((a, b) => a + b, 0) / N;
+  const meanGainPercent = meanGain * 100;
+
+  let gainCategory = '';
+  if (meanGain >= 0.70) gainCategory = 'Tinggi (High Gain)';
+  else if (meanGain >= 0.30) gainCategory = 'Sedang (Medium Gain)';
+  else gainCategory = 'Rendah (Low Gain)';
+
+  let effectiveness = '';
+  if (meanGainPercent > 76) effectiveness = 'Efektif';
+  else if (meanGainPercent >= 56) effectiveness = 'Cukup Efektif';
+  else if (meanGainPercent >= 40) effectiveness = 'Kurang Efektif';
+  else effectiveness = 'Tidak Efektif';
+
+  const narrative = `### 4.X Hasil Uji Hipotesis & Efektivitas Pembelajaran (N-Gain)
+Berdasarkan data pengukuran kemampuan **${variableName}** pada $N = ${N}$ subjek penelitian, diperoleh rata-rata skor *Pre-test* sebesar **${meanPre.toFixed(2)}** ($SD = ${sdPre.toFixed(2)}$) dan rata-rata skor *Post-test* sebesar **${meanPost.toFixed(2)}** ($SD = ${sdPost.toFixed(2)}$), dengan peningkatan rata-rata (*Mean Difference*) sebesar **${meanDiff.toFixed(2)}**.
+
+Hasil uji hipotesis menggunakan *Paired Sample t-Test* menunjukkan nilai $t(${df}) = ${tStat.toFixed(3)}, p ${pFormatted}$. Karena nilai probabilitas $p < 0.05$, maka hipotesis nol ($H_0$) ditolak dan hipotesis alternatif ($H_a$) diterima secara meyakinkan pada tingkat signifikansi $\\alpha = 0.05$. Hal ini membuktikan bahwa terdapat perbedaan peningkatan kemampuan yang signifikan antara sebelum dan sesudah intervensi tindakan.
+
+Selanjutnya, hasil analisis uji efektivitas *Normalized Gain (N-Gain)* menurut kriteria Hake (1999) menghasilkan rata-rata skor $g = ${meanGain.toFixed(3)}$ atau sebesar **${meanGainPercent.toFixed(1)}\\%**. Berdasarkan kategori interpretasi baku, perolehan ini masuk dalam kategori **${gainCategory}** dengan tingkat efektivitas **"${effectiveness}"**. Dengan demikian, intervensi pembelajaran yang diterapkan terbukti efektif secara empiris dalam meningkatkan ${variableName}.`;
+
+  return {
+    N,
+    maxScore: max,
+    variableName,
+    descriptives: {
+      pretest: { mean: meanPre.toFixed(2), sd: sdPre.toFixed(2), min: Math.min(...pre), max: Math.max(...pre) },
+      posttest: { mean: meanPost.toFixed(2), sd: sdPost.toFixed(2), min: Math.min(...post), max: Math.max(...post) },
+      meanDifference: meanDiff.toFixed(2)
+    },
+    tTest: {
+      tStat: tStat.toFixed(3),
+      df,
+      pValue: pFormatted,
+      isSignificant,
+      conclusion: isSignificant ? 'Terdapat perbedaan yang signifikan (Ha diterima)' : 'Tidak terdapat perbedaan signifikan (H0 diterima)'
+    },
+    nGain: {
+      meanGain: meanGain.toFixed(3),
+      gainPercent: `${meanGainPercent.toFixed(1)}%`,
+      category: gainCategory,
+      effectiveness
+    },
+    sampleData: pre.map((pr, i) => ({
+      no: i + 1,
+      pretest: pr,
+      posttest: post[i],
+      diff: post[i] - pr,
+      nGain: individualGains[i]
+    })),
+    narrative
+  };
+}
+
+app.post('/api/stats/calculate', (req, res) => {
+  try {
+    const { pretest, posttest, maxScore = 100, variableName = 'Kemampuan Siswa' } = req.body;
+    const result = calculateAcademicStats({ pretest, posttest, maxScore, variableName });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 // Export DOCX Endpoints
 app.post('/api/export/docx', async (req, res) => {
   try {

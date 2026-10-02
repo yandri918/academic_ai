@@ -80,6 +80,9 @@
     <button class="tab-btn" id="tab-plagiarism-btn" role="tab" aria-selected="false" aria-controls="tab-plagiarism" onclick="switchTab('plagiarism')">
       <span class="tab-icon" aria-hidden="true">🛡️</span>Cek Plagiat
     </button>
+    <button class="tab-btn" id="tab-statistics-btn" role="tab" aria-selected="false" aria-controls="tab-statistics" onclick="switchTab('statistics')">
+      <span class="tab-icon" aria-hidden="true">📊</span>Kalkulator Statistik
+    </button>
   </nav>
 
   <main class="main-content" role="main">
@@ -477,6 +480,95 @@
 
           <div class="plagiarism-sentence-list" id="plagiarism-sentence-list">
             <!-- Rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB 5: KALKULATOR STATISTIK AKADEMIK
+         ════════════════════════════════════ -->
+    <section id="tab-statistics" class="tab-content" role="tabpanel" aria-labelledby="tab-statistics-btn">
+      <div class="validator-layout">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h1 class="section-title">Kalkulator Statistik Akademik</h1>
+            <p class="section-subtitle">Hitung Uji Beda Paired Sample t-Test &amp; N-Gain Score (Hake, 1999) + Narasi Pembahasan BAB IV Otomatis</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadSampleStatsData()" title="Muat contoh data nilai siswa PAUD">
+            🎲 Contoh Data PAUD (N=20)
+          </button>
+        </div>
+
+        <!-- Input Card -->
+        <div class="glass-card validator-input-card mb-4">
+          <div class="grid-2-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
+            <div class="form-group">
+              <label class="form-label" for="stat-var-name">Variabel Penelitian</label>
+              <input type="text" id="stat-var-name" class="form-input" value="Kemampuan Motorik Halus Anak Usia Dini" placeholder="Cth: Keterampilan Motorik Halus" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="stat-max-score">Skor Maksimal Skala</label>
+              <input type="number" id="stat-max-score" class="form-input" value="100" min="1" max="1000" />
+            </div>
+          </div>
+
+          <div class="grid-2-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
+            <div class="form-group">
+              <label class="form-label" for="stat-pretest">Nilai Pre-test (Pisahkan dengan koma atau spasi)</label>
+              <textarea id="stat-pretest" class="form-textarea" style="min-height:90px;" placeholder="50, 55, 60, 65, 58, 62, 54, 50, 60, 64..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="stat-posttest">Nilai Post-test (Jumlah harus sama dengan Pre-test)</label>
+              <textarea id="stat-posttest" class="form-textarea" style="min-height:90px;" placeholder="78, 82, 85, 90, 84, 88, 80, 76, 86, 92..."></textarea>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button class="btn btn-primary" id="btn-calc-stats" onclick="runStatsCalculation()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+              ⚡ Hitung t-Test &amp; N-Gain
+            </button>
+            <button class="btn btn-ghost" onclick="clearStatsForm()">Hapus</button>
+            <div class="ml-auto text-sm text-muted" id="stat-status-text"></div>
+          </div>
+        </div>
+
+        <!-- Result Stats Cards -->
+        <div class="validator-summary hidden" id="stats-summary-wrap" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="stat-res-pre">0</div>
+            <div class="summary-stat-label">Rata-rata Pre-test</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="stat-res-post" style="color:var(--c-primary);">0</div>
+            <div class="summary-stat-label">Rata-rata Post-test</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="stat-res-t" style="color:var(--c-accent);">0</div>
+            <div class="summary-stat-label" id="stat-res-p">t-Hitung (p &lt; .05)</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="stat-res-gain" style="color:var(--c-success);">0%</div>
+            <div class="summary-stat-label" id="stat-res-gain-cat">N-Gain (Efektif)</div>
+          </div>
+        </div>
+
+        <!-- Narrative & Output Section -->
+        <div class="glass-card hidden" id="stats-narrative-card" style="padding:24px;">
+          <div class="flex items-center justify-between mb-3">
+            <h3 style="font-size:1.1rem;font-weight:700;">📝 Narasi Pembahasan Bab IV (Format Baku Skripsi)</h3>
+            <div class="flex items-center gap-2">
+              <button class="btn btn-secondary btn-sm" onclick="saveStatsToMemory()" id="btn-save-stats-mem">
+                🧠 Simpan ke Memori
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="copyStatsNarrative()">
+                📋 Salin Teks Bab IV
+              </button>
+            </div>
+          </div>
+          <div class="md-body" id="stats-narrative-content" style="background:rgba(255,255,255,0.03);padding:18px;border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,0.06);line-height:1.7;">
           </div>
         </div>
 

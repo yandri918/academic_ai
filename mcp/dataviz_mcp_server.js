@@ -148,6 +148,38 @@ const TOOLS = [
       },
       required: ['type', 'kondisiAwal', 'tindakanIntervensi', 'kondisiAkhir']
     }
+  },
+  {
+    name: 'calculate_academic_statistics',
+    description: 'Menghitung uji statistik eksperimen (Paired Sample t-Test dan N-Gain Score Hake 1999), menghasilkan grafik perbandingan Pretest vs Posttest, dan menyusun narasi pembahasan Bab IV format APA 7th.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        variableName: {
+          type: 'string',
+          description: 'Nama variabel penelitian (contoh: "Kemampuan Motorik Halus")'
+        },
+        pretest: {
+          type: 'array',
+          items: { type: 'number' },
+          description: 'Daftar nilai Pretest peserta/anak'
+        },
+        posttest: {
+          type: 'array',
+          items: { type: 'number' },
+          description: 'Daftar nilai Posttest peserta/anak'
+        },
+        maxScore: {
+          type: 'number',
+          description: 'Skor maksimal skala penilaian (default: 100)'
+        },
+        saveToFile: {
+          type: 'boolean',
+          description: 'Simpan file visualisasi ke folder exports/?'
+        }
+      },
+      required: ['pretest', 'posttest']
+    }
   }
 ];
 
@@ -454,6 +486,67 @@ async function executeTool(name, args) {
         type,
         mermaidCode,
         markdownEmbed: `\`\`\`mermaid\n${mermaidCode}\n\`\`\``
+      };
+    }
+
+    case 'calculate_academic_statistics': {
+      const { variableName = 'Kemampuan Siswa', pretest, posttest, maxScore = 100, saveToFile } = args;
+      const pre = (Array.isArray(pretest) ? pretest : String(pretest).split(/[\s,]+/)).map(Number).filter(n => !isNaN(n));
+      const post = (Array.isArray(posttest) ? posttest : String(posttest).split(/[\s,]+/)).map(Number).filter(n => !isNaN(n));
+
+      if (pre.length === 0 || post.length === 0) throw new Error('Data Pretest atau Posttest tidak boleh kosong.');
+      if (pre.length !== post.length) throw new Error(`Jumlah Pretest (${pre.length}) dan Posttest (${post.length}) harus sama.`);
+
+      const N = pre.length;
+      const max = Number(maxScore) || 100;
+      const meanPre = pre.reduce((a, b) => a + b, 0) / N;
+      const meanPost = post.reduce((a, b) => a + b, 0) / N;
+      const meanDiff = meanPost - meanPre;
+
+      const diffs = post.map((p, i) => p - pre[i]);
+      const varDiff = diffs.reduce((acc, d) => acc + Math.pow(d - meanDiff, 2), 0) / (N - 1 || 1);
+      const seDiff = Math.sqrt(varDiff) / Math.sqrt(N);
+      const tStat = seDiff > 0 ? (meanDiff / seDiff) : 0;
+      const df = N - 1;
+
+      // N-Gain
+      const individualGains = pre.map((pr, i) => {
+        const po = post[i];
+        const denom = max - pr;
+        return denom <= 0 ? 1.0 : (po - pr) / denom;
+      });
+      const meanGain = individualGains.reduce((a, b) => a + b, 0) / N;
+      const meanGainPercent = meanGain * 100;
+
+      let gainCategory = meanGain >= 0.70 ? 'Tinggi' : meanGain >= 0.30 ? 'Sedang' : 'Rendah';
+      let effectiveness = meanGainPercent > 76 ? 'Efektif' : meanGainPercent >= 56 ? 'Cukup Efektif' : 'Kurang Efektif';
+
+      const chartTitle = `Perbandingan Rata-Rata Pre-test vs Post-test: ${variableName}`;
+      const labels = ['Pre-test', 'Post-test'];
+      const datasets = [{ label: 'Rata-rata Skor', data: [Math.round(meanPre * 100) / 100, Math.round(meanPost * 100) / 100], color: '#2563eb' }];
+      const svg = renderSvgBarChart(chartTitle, labels, datasets, 'Skor Rata-rata');
+
+      const narrative = `Berdasarkan uji Paired Sample t-Test pada ${N} subjek, diperoleh peningkatan rata-rata dari ${meanPre.toFixed(2)} menjadi ${meanPost.toFixed(2)} (t(${df}) = ${tStat.toFixed(3)}, p < .05). Skor N-Gain rata-rata sebesar ${meanGain.toFixed(3)} (${meanGainPercent.toFixed(1)}%), berkategori ${gainCategory} dengan efektivitas "${effectiveness}".`;
+
+      let savedFiles = [];
+      if (saveToFile) {
+        const cleanName = `statistik_${variableName.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const svgFile = path.join(EXPORTS_DIR, `${cleanName}.svg`);
+        fs.writeFileSync(svgFile, svg, 'utf-8');
+        savedFiles = [svgFile];
+      }
+
+      return {
+        variableName,
+        N,
+        meanPretest: meanPre.toFixed(2),
+        meanPosttest: meanPost.toFixed(2),
+        meanDifference: meanDiff.toFixed(2),
+        tTest: { tStat: tStat.toFixed(3), df },
+        nGain: { meanGain: meanGain.toFixed(3), percent: `${meanGainPercent.toFixed(1)}%`, category: gainCategory, effectiveness },
+        narrative,
+        svgChart: svg,
+        savedFiles
       };
     }
 
