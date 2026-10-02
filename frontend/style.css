@@ -304,10 +304,7 @@ img { max-width: 100%; display: block; }
 .mode-badge:hover { border-color: var(--c-primary); color: var(--t-primary); }
 .mode-badge.active-mode { border-color: rgba(108,99,255,0.5); background: rgba(108,99,255,0.1); color: var(--c-primary-2); }
 .session-id-display {
-  margin-left: auto; font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem; color: var(--t-muted);
-  background: var(--c-surface); padding: 5px 10px;
-  border-radius: var(--radius-sm); border: 1px solid var(--c-border);
+  display: none !important;
 }
 .chat-messages {
   flex: 1; overflow-y: auto;
