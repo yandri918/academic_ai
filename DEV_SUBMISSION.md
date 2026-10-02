@@ -68,7 +68,8 @@ curl https://academicai-production-a41d.up.railway.app/healthz
   "discipline": "Universal Academic Research (Multi-Disciplinary)",
   "features": ["memory_context","pdf_parser","plagiarism_checker",
     "google_scholar","zotero_sync","full_generator",
-    "citation_validator","academic_stats","dataviz_mcp"]
+    "citation_validator","academic_stats","dataviz_mcp"],
+  "models": ["gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.7-flash","gemini-3.8-flash"]
 }
 ```
 
@@ -172,10 +173,10 @@ When one Gemini model is overloaded, the harness automatically falls back — ke
 ```javascript
 // Fully open-source orchestration logic
 const MODELS = [
-  'gemini-2.0-flash-lite',   // fastest, cheapest
-  'gemini-2.0-flash',        // balanced
-  'gemini-2.5-flash',        // high quality
-  'gemini-2.5-pro'           // maximum capability
+  'gemini-3.1-flash-lite',   // fastest, ultra-low latency
+  'gemini-3.5-flash-lite',   // highly efficient reasoning
+  'gemini-3.7-flash',        // balanced multimodal speed & quality
+  'gemini-3.8-flash'         // state-of-the-art academic prose
 ];
 
 async function callGemini(systemPrompt, userPrompt) {
@@ -334,8 +335,8 @@ AcademAI was built with the help of **Antigravity IDE** (Google DeepMind's agent
 
 ## Prize Categories
 
-- **🤖 Google Gemini**: Built on Google Gemini API with a 4-model fallback chain (Flash Lite → Flash → Flash 2.5 → Pro 2.5) and a fully open-source discipline-aware prompt engineering layer
-- **🏆 Best Open Source Tool**: MIT-licensed agent harness, DISCIPLINES registry, Statistics Engine, and full frontend — forkable, self-hostable, and adaptable to any university format in the world
+- **🤖 Google Gemini**: Built on Google Gemini API with a 4-model intelligent fallback chain (Gemini 3.1 Flash Lite → Gemini 3.5 Flash Lite → Gemini 3.7 Flash → Gemini 3.8 Flash) for fast, free-tier accessible academic generation, plus complementary local Google Gemma 2 (9B) open-weight support.
+- **🏆 Best Open Source Tool**: 100% MIT-licensed agent harness, DISCIPLINES registry (12 faculties), Citation Validator, Statistics Engine, and vanilla frontend — completely forkable, self-hostable, and adaptable to any university curriculum in the world.
 
 ---
 
