@@ -17,6 +17,7 @@ const CONFIG = {
   N8N_WEBHOOK:       _n8nBase + (_cfg.WEBHOOK_PATH || '/webhook/academ-ai'),
   N8N_HEALTHCHECK:   _n8nBase + '/healthz',
   MEMORY_API:        _n8nBase + '/api/memory',
+  PDF_UPLOAD_API:    _n8nBase + '/api/pdf/upload',
   PING_INTERVAL:     _cfg.PING_INTERVAL_MS     || 15000,
   REQUEST_TIMEOUT:   _cfg.REQUEST_TIMEOUT_MS   || 120000,
   IS_RAILWAY:        _n8nBase.includes('railway.app'),
@@ -1047,6 +1048,72 @@ function previewMemoryDoc(docId) {
   const doc = state.memoryDocuments.find(d => d.id === docId);
   if (!doc) return;
   alert(`=== ${doc.title} (${doc.wordCount} kata) ===\n\n` + doc.content.substring(0, 1000) + (doc.content.length > 1000 ? '\n\n...(Dipotong untuk pratinjau ringkas)' : ''));
+}
+
+// ── PDF Upload & Ingestion Handlers ──────────────
+
+function triggerPdfUpload() {
+  const fileInput = document.getElementById('pdf-file-input');
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.click();
+  }
+}
+
+async function handlePdfUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    toast('Hanya file berekstensi .pdf yang diperbolehkan!', 'warn');
+    return;
+  }
+
+  // Max 35MB
+  if (file.size > 35 * 1024 * 1024) {
+    toast('Ukuran file PDF melebihi batas maksimal 35MB', 'error');
+    return;
+  }
+
+  toast(`⏳ Mengunggah & mengekstrak teks dari "${file.name}"...`, 'info', 4000);
+
+  const formData = new FormData();
+  formData.append('pdf', file);
+  formData.append('sessionId', state.sessionId);
+
+  try {
+    const response = await fetch(CONFIG.PDF_UPLOAD_API, {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Gagal memproses file PDF.');
+    }
+
+    const { document: doc, meta } = result;
+    toast(`✅ Berhasil ekstrak: ${meta.fileName} (${meta.pageCount} hal, ${meta.wordCount.toLocaleString('id-ID')} kata) tersimpan ke Memori!`, 'success', 4000);
+
+    // Refresh memory list & badge
+    await fetchMemoryDocuments();
+
+    // Close modal if open and switch to chat
+    closeMemoryModal();
+    switchTab('chat');
+
+    // Pre-fill chat with synthesis prompt
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+      chatInput.value = `Berdasarkan dokumen PDF "${doc.title}" yang baru saja saya unggah ke memori riset, tolong rangkumkan:\n1. Masalah utama dan fokus penelitian\n2. Teori dan metodologi yang digunakan\n3. Hasil temuan kunci yang relevan untuk skripsi saya`;
+      autoResizeTextarea(chatInput);
+      chatInput.focus();
+    }
+  } catch (err) {
+    console.error('[PDF Upload Error]:', err);
+    toast(`❌ Gagal memproses PDF: ${err.message}`, 'error', 4500);
+  }
 }
 
 // Wait for DOM + scripts

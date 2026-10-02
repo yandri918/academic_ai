@@ -4,6 +4,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { PDFParse } = require('pdf-parse');
 
 dotenv.config();
 
@@ -12,6 +17,11 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 35 * 1024 * 1024 } // Maksimal 35MB
+});
 
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '15mb' }));
@@ -105,7 +115,7 @@ app.get('/healthz', (req, res) => {
     status: 'ok',
     server: 'AcademAI Direct Academic Engine',
     discipline: 'S1 PAUD & Academic Research',
-    features: ['memory_context', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator'],
+    features: ['memory_context', 'pdf_parser', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator'],
     models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-3.8-flash']
   });
 });
@@ -139,6 +149,105 @@ app.delete('/api/memory/:sessionId', (req, res) => {
   const { sessionId } = req.params;
   clearSessionMemory(sessionId);
   res.json({ success: true, remainingCount: 0 });
+});
+
+// ── PDF Parsing & Ingestion API Endpoints ────────
+app.post('/api/pdf/upload', upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Tidak ada file PDF yang diunggah.' });
+    }
+    const sessionId = req.body.sessionId || 'default_session';
+    const customTitle = req.body.title || req.file.originalname.replace(/\.pdf$/i, '');
+
+    console.log(`[AcademAI PDF] Menerima unggahan file "${req.file.originalname}" (${(req.file.size / 1024).toFixed(1)} KB)...`);
+
+    const parser = new PDFParse({ data: req.file.buffer });
+    const textResult = await parser.getText();
+    const info = await parser.getInfo();
+
+    const rawText = textResult.text || '';
+    const cleanText = rawText.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    const pageCount = textResult.total || 1;
+    const wordCount = cleanText.split(/\s+/).filter(Boolean).length;
+
+    if (wordCount < 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'Teks tidak dapat diekstrak dari PDF ini (kemungkinan berupa scan gambar / PDF terenkripsi).'
+      });
+    }
+
+    // Otomatis masukkan ke Memori Dokumen Riset
+    const savedDoc = saveDocumentToMemory(sessionId, {
+      title: `PDF: ${customTitle}`,
+      type: 'pdf_upload',
+      content: cleanText
+    });
+
+    console.log(`[AcademAI PDF] ✅ Berhasil mengekstrak ${pageCount} halaman, ${wordCount} kata. Tersimpan ke memori (${savedDoc.id})`);
+
+    res.json({
+      success: true,
+      sessionId,
+      document: savedDoc,
+      meta: {
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        pageCount,
+        wordCount,
+        pdfInfo: info?.info || {}
+      }
+    });
+  } catch (err) {
+    console.error('[AcademAI PDF Upload Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/pdf/parse-path', async (req, res) => {
+  try {
+    const { filePath, sessionId = 'default_session', title } = req.body;
+    if (!filePath) {
+      return res.status(400).json({ success: false, error: 'Path file PDF wajib diisi' });
+    }
+    const resolvedPath = path.resolve(filePath);
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ success: false, error: `File tidak ditemukan: ${resolvedPath}` });
+    }
+
+    const dataBuffer = fs.readFileSync(resolvedPath);
+    const parser = new PDFParse({ data: dataBuffer });
+    const textResult = await parser.getText();
+    const info = await parser.getInfo();
+
+    const cleanText = (textResult.text || '').replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    const pageCount = textResult.total || 1;
+    const wordCount = cleanText.split(/\s+/).filter(Boolean).length;
+
+    const docTitle = title || `PDF: ${path.basename(resolvedPath).replace(/\.pdf$/i, '')}`;
+
+    const savedDoc = saveDocumentToMemory(sessionId, {
+      title: docTitle,
+      type: 'pdf_upload',
+      content: cleanText
+    });
+
+    res.json({
+      success: true,
+      sessionId,
+      document: savedDoc,
+      meta: {
+        filePath: resolvedPath,
+        pageCount,
+        wordCount,
+        pdfInfo: info?.info || {}
+      }
+    });
+  } catch (err) {
+    console.error('[AcademAI PDF Parse Path Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Helper: Query Google Scholar via SerpApi

@@ -148,6 +148,7 @@
             <p>Asisten riset & penulisan artikel ilmiah berbasis AI untuk mahasiswa, dosen, dan peneliti Indonesia.</p>
             <div class="chat-suggestions" role="group" aria-label="Saran pertanyaan">
               <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Bantu saya menulis latar belakang penelitian">✍️ Bantu tulis latar belakang penelitian</button>
+              <button class="suggestion-chip" onclick="triggerPdfUpload()" aria-label="Upload PDF Jurnal">📄 Upload PDF Jurnal / Skripsi</button>
               <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Buat tabel penelitian terdahulu">📊 Buat tabel penelitian terdahulu</button>
               <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Parafrase teks ini untuk menghindari plagiarisme">🔄 Parafrase untuk hindari plagiat</button>
               <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Buat abstrak Indonesia dan Inggris">📄 Buat abstrak Indonesia & Inggris</button>
@@ -169,6 +170,9 @@
               onkeydown="handleChatKey(event)"
               oninput="autoResizeTextarea(this)"
             ></textarea>
+            <button class="chat-attach-btn" id="pdf-attach-btn" onclick="triggerPdfUpload()" aria-label="Upload PDF Jurnal / Skripsi" title="Upload PDF Jurnal / Skripsi untuk memori konteks">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
             <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()" aria-label="Kirim pesan" title="Kirim (Enter)">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
@@ -404,9 +408,22 @@
       Dokumen di bawah ini otomatis menjadi <strong>konteks aktif</strong>. AcademAI akan merujuk dokumen ini untuk menghasilkan kelanjutan bab, pembahasan, instrumen, maupun abstrak secara sinkron.
     </p>
     
+    <!-- PDF Upload Dropzone inside Modal -->
+    <div class="pdf-upload-box" onclick="triggerPdfUpload()" title="Klik untuk mengunggah PDF">
+      <span class="pdf-upload-icon">📄</span>
+      <div class="pdf-upload-info">
+        <span class="pdf-upload-title">Unggah Jurnal / Dokumen PDF</span>
+        <span class="pdf-upload-sub">Pilih file PDF (maks. 35MB). Teks diekstrak dan otomatis tersimpan ke Memori Konteks.</span>
+      </div>
+      <button class="btn btn-secondary btn-xs" type="button">Pilih PDF</button>
+    </div>
+    
     <div id="memory-docs-list" class="memory-docs-list">
       <!-- Rendered by JS -->
     </div>
+
+    <!-- Hidden input for file selection -->
+    <input type="file" id="pdf-file-input" accept=".pdf" style="display:none;" onchange="handlePdfUpload(event)" />
 
     <div class="memory-modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="promptAddNewMemoryDoc()">+ Tambah Dokumen Manual</button>
