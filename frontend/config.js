@@ -9,8 +9,7 @@
 
 window.ACADEM_CONFIG = {
   // ── WAJIB DIISI ──────────────────────────────
-  // URL n8n Railway Anda:
-  N8N_URL: "https://academicai-production-c4d6.up.railway.app",
+  N8N_URL: "https://academicai-production-a41d.up.railway.app",
 
   // Path webhook
   WEBHOOK_PATH: "/webhook/academ-ai",
