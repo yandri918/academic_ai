@@ -118,13 +118,17 @@ async function callAcademAI(payload) {
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const errText = await response.text().catch(() => response.statusText);
-      throw new Error(`Server error ${response.status}: ${errText}`);
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      throw new Error('Server n8n merespons kosong (200 OK tanpa body). Ini terjadi jika node AI Agent di n8n gagal mengeksekusi model atau berhenti di tengah jalan. Pastikan Anda mengimpor academ_ai_workflow_gemini.json dan API Key Gemini sudah terhubung.');
     }
 
-    const data = await response.json();
-    return data;
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch (parseErr) {
+      throw new Error(`Gagal parse JSON dari n8n: ${text.substring(0, 150)}...`);
+    }
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === 'AbortError') throw new Error('Request timeout (2 menit). Server mungkin sedang memproses, coba lagi.');
