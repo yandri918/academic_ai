@@ -12,9 +12,8 @@ window.ACADEM_CONFIG = {
   // URL n8n Railway Anda:
   N8N_URL: "https://academicai-production-c4d6.up.railway.app",
 
-  // ── OPSIONAL ─────────────────────────────────
-  // Path webhook (biasanya tidak perlu diubah)
-  WEBHOOK_PATH: "/webhook/academ-ai",
+  // Path webhook
+  WEBHOOK_PATH: "/webhook/5c5c640e-cc52-4374-be80-f2e912f37976",
 
   // Timeout request AI dalam milidetik (default 2 menit)
   REQUEST_TIMEOUT_MS: 120000,
