@@ -8,8 +8,8 @@
    ============================================ */
 
 window.ACADEM_CONFIG = {
-  // ── WAJIB DIISI ──────────────────────────────
-  N8N_URL: "https://academicai-production-a41d.up.railway.app",
+  // URL server AcademAI (otomatis sesuai host / port yang sedang dibuka)
+  N8N_URL: (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : "http://localhost:3000",
 
   // Path webhook
   WEBHOOK_PATH: "/webhook/academ-ai",

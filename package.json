@@ -1,0 +1,26 @@
+{
+  "name": "academic_ai",
+  "version": "2.0.0",
+  "description": "AcademAI — AI Academic Research & Thesis Co-pilot with Gemini 3.8 Flash, Google Scholar & Zotero",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "keywords": [
+    "academic-ai",
+    "gemini",
+    "zotero",
+    "google-scholar",
+    "hacktoberfest-2026",
+    "paud"
+  ],
+  "author": "Andriyanto",
+  "license": "MIT"
+}
