@@ -387,7 +387,7 @@ async function sendChatMessage() {
     state.messages.push({ role: 'ai', content });
   } catch (err) {
     removeTypingIndicator();
-    const errMsg = `❌ **Gagal menghubungi n8n**: ${err.message}\n\nPastikan:\n1. Docker container berjalan (\`docker-compose up -d\`)\n2. Workflow n8n aktif\n3. API key Anthropic sudah diisi`;
+    const errMsg = `❌ **Gagal menghubungi n8n**: ${err.message}\n\nPastikan:\n1. Server n8n Railway berjalan (online)\n2. Toggle workflow di n8n Railway sudah diubah ke **Active** (warna hijau)\n3. API Key Gemini sudah terpasang di n8n`;
     appendMessage('ai', errMsg);
     toast(err.message, 'error');
   } finally {
