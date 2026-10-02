@@ -18,6 +18,7 @@ const CONFIG = {
   N8N_HEALTHCHECK:   _n8nBase + '/healthz',
   MEMORY_API:        _n8nBase + '/api/memory',
   PDF_UPLOAD_API:    _n8nBase + '/api/pdf/upload',
+  PLAGIARISM_API:    _n8nBase + '/api/plagiarism/check',
   PING_INTERVAL:     _cfg.PING_INTERVAL_MS     || 15000,
   REQUEST_TIMEOUT:   _cfg.REQUEST_TIMEOUT_MS   || 120000,
   IS_RAILWAY:        _n8nBase.includes('railway.app'),
@@ -1114,6 +1115,169 @@ async function handlePdfUpload(event) {
     console.error('[PDF Upload Error]:', err);
     toast(`❌ Gagal memproses PDF: ${err.message}`, 'error', 4500);
   }
+}
+
+// ── Plagiarism & Turnitin Similarity Checker ────
+let currentPlagiarismResult = null;
+
+async function checkPlagiarism() {
+  const inputEl = document.getElementById('plagiarism-input');
+  const text = inputEl ? inputEl.value.trim() : '';
+
+  if (!text || text.length < 20) {
+    toast('Masukkan teks minimal 20 karakter untuk diperiksa!', 'warn');
+    if (inputEl) inputEl.focus();
+    return;
+  }
+
+  const btn = document.getElementById('plagiarism-btn');
+  const statusEl = document.getElementById('plagiarism-status');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Memeriksa Turnitin & Scholar…`;
+  if (statusEl) statusEl.textContent = 'Menganalisis kemiripan teks…';
+
+  try {
+    const response = await fetch(CONFIG.PLAGIARISM_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: state.sessionId,
+        text
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Gagal memeriksa plagiarisme');
+    }
+
+    currentPlagiarismResult = data;
+    renderPlagiarismResults(data);
+
+    if (statusEl) statusEl.textContent = `✅ Selesai: Kemiripan ${data.similarityScore}%`;
+    toast(`Audit selesai: Kemiripan ${data.similarityScore}% (${data.statusLabel})`, data.similarityScore < 15 ? 'success' : 'warn', 4000);
+  } catch (err) {
+    console.error('[Plagiarism Error]:', err);
+    if (statusEl) statusEl.textContent = '❌ Gagal';
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Cek Kemiripan Sekarang`;
+  }
+}
+
+function renderPlagiarismResults(data) {
+  const summaryEl = document.getElementById('plagiarism-summary');
+  const resultsWrapEl = document.getElementById('plagiarism-results-wrap');
+  const scoreBox = document.getElementById('similarity-score-box');
+  const scoreEl = document.getElementById('stat-similarity');
+  const badgeEl = document.getElementById('stat-similarity-badge');
+  const totalSentencesEl = document.getElementById('stat-total-sentences');
+  const flaggedSentencesEl = document.getElementById('stat-flagged-sentences');
+  const uniquePercentageEl = document.getElementById('stat-unique-percentage');
+  const listEl = document.getElementById('plagiarism-sentence-list');
+
+  if (!summaryEl || !resultsWrapEl) return;
+
+  const score = data.similarityScore || 0;
+  scoreEl.textContent = `${score}%`;
+  totalSentencesEl.textContent = data.totalSentences || 1;
+  flaggedSentencesEl.textContent = data.flaggedCount || (data.flaggedSentences ? data.flaggedSentences.length : 0);
+  uniquePercentageEl.textContent = `${Math.max(0, 100 - score)}%`;
+
+  scoreBox.className = 'similarity-score-box';
+  if (score < 15) {
+    scoreBox.classList.add('safe');
+    badgeEl.textContent = '🟢 Aman (< 15%) Lolos Sidang';
+  } else if (score <= 25) {
+    scoreBox.classList.add('warning');
+    badgeEl.textContent = '🟡 Waspada (15%-25%) Perlu Parafrase';
+  } else {
+    scoreBox.classList.add('high');
+    badgeEl.textContent = '🔴 Tinggi (> 25%) Rawan Plagiat';
+  }
+
+  summaryEl.classList.remove('hidden');
+  resultsWrapEl.classList.remove('hidden');
+
+  const flagged = data.flaggedSentences || [];
+  if (flagged.length === 0) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:24px 16px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:var(--radius-sm);">
+        <div style="font-size:1.8rem;margin-bottom:6px;">✨</div>
+        <strong style="color:var(--c-success);font-size:0.95rem;">Luar Biasa! Tidak Ditemukan Kalimat Plagiat Signifikan.</strong>
+        <p class="text-sm text-muted" style="margin-top:4px;">Struktur kalimat, diksi ilmiah, dan orisinalitas naskah ini sudah memenuhi standar Turnitin perguruan tinggi Indonesia.</p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = flagged.map((item, idx) => `
+    <div class="plagiarism-item ${item.similarity <= 25 ? 'warning' : ''}">
+      <div class="plagiarism-item-header">
+        <span class="plagiarism-item-source">🔍 <strong>Indikasi Sumber:</strong> ${escapeHtml(item.potentialSource || 'Literatur / Jurnal Relevan')}</span>
+        <span class="plagiarism-item-score">Kemiripan: ~${item.similarity}%</span>
+      </div>
+      <div class="plagiarism-original">
+        <strong>Teks Asli:</strong> "${escapeHtml(item.original)}"
+        ${item.reason ? `<div style="font-size:0.78rem;color:var(--t-secondary);margin-top:4px;">⚠️ Catatan: ${escapeHtml(item.reason)}</div>` : ''}
+      </div>
+      <div class="plagiarism-suggestion-box">
+        <div class="plagiarism-suggestion-title">
+          <span>💡 Rekomendasi Parafrase Akademik</span>
+          <button class="btn btn-ghost btn-xs" onclick="copyParaphrasedSentence('${escapeHtml(item.paraphrasedSuggestion || '')}')" style="color:var(--c-accent);">Salin</button>
+        </div>
+        <div class="plagiarism-suggestion-text">
+          "${escapeHtml(item.paraphrasedSuggestion || item.original)}"
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyParaphrasedSentence(text) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => toast('Parafrase disalin!', 'success', 2000));
+}
+
+function applyFullAutoParaphrase() {
+  if (!currentPlagiarismResult || !currentPlagiarismResult.paraphrasedFullText) {
+    toast('Tidak ada teks parafrase otomatis yang tersedia', 'warn');
+    return;
+  }
+  const inputEl = document.getElementById('plagiarism-input');
+  if (inputEl) {
+    inputEl.value = currentPlagiarismResult.paraphrasedFullText;
+    toast('✅ Teks telah digantikan dengan versi parafrase bebas plagiat (< 15%)!', 'success', 3500);
+    // Re-check automatically
+    setTimeout(checkPlagiarism, 500);
+  }
+}
+
+function clearPlagiarism() {
+  const inputEl = document.getElementById('plagiarism-input');
+  if (inputEl) inputEl.value = '';
+  document.getElementById('plagiarism-summary').classList.add('hidden');
+  document.getElementById('plagiarism-results-wrap').classList.add('hidden');
+  document.getElementById('plagiarism-status').textContent = '';
+  currentPlagiarismResult = null;
+  toast('Form cek plagiat dibersihkan', 'info', 1500);
+}
+
+function loadFromActiveMemoryForPlagiarism() {
+  if (!state.memoryDocuments || state.memoryDocuments.length === 0) {
+    toast('Belum ada dokumen tersimpan di memori riset!', 'warn');
+    return;
+  }
+  const latestDoc = state.memoryDocuments[0];
+  const inputEl = document.getElementById('plagiarism-input');
+  if (inputEl) {
+    inputEl.value = latestDoc.content;
+    toast(`Memuat "${latestDoc.title}" (${latestDoc.wordCount} kata) dari memori!`, 'success', 2500);
+  }
+}
+
+function triggerPlagiarismPdfUpload() {
+  triggerPdfUpload();
 }
 
 // Wait for DOM + scripts

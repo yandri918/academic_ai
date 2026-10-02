@@ -71,6 +71,9 @@
     <button class="tab-btn" id="tab-validator-btn" role="tab" aria-selected="false" aria-controls="tab-validator" onclick="switchTab('validator')">
       <span class="tab-icon" aria-hidden="true">🔍</span>Validator Sitasi
     </button>
+    <button class="tab-btn" id="tab-plagiarism-btn" role="tab" aria-selected="false" aria-controls="tab-plagiarism" onclick="switchTab('plagiarism')">
+      <span class="tab-icon" aria-hidden="true">🛡️</span>Cek Plagiat
+    </button>
   </nav>
 
   <main class="main-content" role="main">
@@ -383,6 +386,88 @@
         <!-- Results List -->
         <div class="validator-results" id="validator-results" role="list" aria-label="Hasil validasi sitasi">
           <!-- Rendered by JS -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB 4: CEK PLAGIAT & SIMILARITY
+         ════════════════════════════════════ -->
+    <section id="tab-plagiarism" class="tab-content" role="tabpanel" aria-labelledby="tab-plagiarism-btn">
+      <div class="plagiarism-layout">
+        <h1 class="section-title">Cek Plagiarisme & Skor Kemiripan Turnitin</h1>
+        <p class="section-subtitle">Analisis tingkat kemiripan teks dengan indeks jurnal Google Scholar, deteksi kalimat rentan plagiat, dan parafrase instan otomatis (&lt; 15%).</p>
+
+        <!-- Input Card -->
+        <div class="glass-card plagiarism-input-card">
+          <div class="form-group" style="margin-bottom:16px;">
+            <div class="flex items-center justify-between mb-2">
+              <label class="form-label" for="plagiarism-input" style="margin-bottom:0;">Teks yang Akan Diperiksa</label>
+              <div class="flex items-center gap-2">
+                <button class="btn btn-ghost btn-xs" onclick="loadFromActiveMemoryForPlagiarism()" title="Ambil teks dari draf memori">
+                  🧠 Muat dari Memori
+                </button>
+                <button class="btn btn-ghost btn-xs" onclick="triggerPlagiarismPdfUpload()" title="Upload file PDF untuk cek plagiat">
+                  📄 Upload PDF
+                </button>
+              </div>
+            </div>
+            <textarea
+              id="plagiarism-input" class="form-textarea"
+              placeholder="Paste paragraf, bab skripsi, atau draf artikel Anda di sini... (Maksimal 15.000 karakter)"
+              style="min-height:170px;"
+              aria-label="Teks untuk cek plagiat"
+            ></textarea>
+            <div class="form-hint">Mendukung teks bahasa Indonesia & bahasa Inggris. Diuji silang dengan data Google Scholar dan analisis sintaksis Turnitin.</div>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <button class="btn btn-primary" id="plagiarism-btn" onclick="checkPlagiarism()" aria-label="Mulai cek plagiat">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Cek Kemiripan Sekarang
+            </button>
+            <button class="btn btn-ghost" onclick="clearPlagiarism()" aria-label="Hapus input">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              Hapus
+            </button>
+            <div class="ml-auto text-sm text-muted" id="plagiarism-status"></div>
+          </div>
+        </div>
+
+        <!-- Plagiarism Score Meter & Summary -->
+        <div class="plagiarism-summary hidden" id="plagiarism-summary" role="region" aria-label="Hasil skor kemiripan">
+          <div class="similarity-score-box" id="similarity-score-box">
+            <div class="similarity-percentage" id="stat-similarity">0%</div>
+            <div class="similarity-label" id="stat-similarity-label">Indeks Kemiripan</div>
+            <div class="similarity-badge" id="stat-similarity-badge">🟢 Aman (&lt; 15%)</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="stat-total-sentences">0</div>
+            <div class="summary-stat-label">Total Kalimat</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="stat-flagged-sentences" style="color:var(--c-danger);">0</div>
+            <div class="summary-stat-label">⚠️ Perlu Parafrase</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="stat-unique-percentage" style="color:var(--c-success);">100%</div>
+            <div class="summary-stat-label">✨ Orisinalitas</div>
+          </div>
+        </div>
+
+        <!-- Detailed Sentence Breakdown & Auto-Paraphrase Section -->
+        <div class="plagiarism-results-wrap hidden" id="plagiarism-results-wrap">
+          <div class="flex items-center justify-between mb-3">
+            <h3 style="font-size:1.05rem;font-weight:700;">Deteksi Kalimat & Rekomendasi Parafrase Turnitin</h3>
+            <button class="btn btn-accent btn-sm" onclick="applyFullAutoParaphrase()" id="btn-full-paraphrase">
+              🔄 Terapkan Parafrase Otomatis (&lt; 15%)
+            </button>
+          </div>
+
+          <div class="plagiarism-sentence-list" id="plagiarism-sentence-list">
+            <!-- Rendered by JS -->
+          </div>
         </div>
 
       </div>

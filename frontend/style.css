@@ -924,3 +924,136 @@ img { max-width: 100%; display: block; }
   color: var(--t-secondary);
 }
 
+/* ── Plagiarism Checker Styles ─────────────── */
+.plagiarism-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.plagiarism-summary {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 14px;
+  animation: fadeIn 0.25s ease;
+}
+.similarity-score-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.similarity-percentage {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 4px;
+}
+.similarity-score-box.safe .similarity-percentage { color: var(--c-success); }
+.similarity-score-box.warning .similarity-percentage { color: var(--c-warn); }
+.similarity-score-box.high .similarity-percentage { color: var(--c-danger); }
+
+.similarity-label {
+  font-size: 0.75rem;
+  color: var(--t-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.similarity-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--c-success);
+}
+.similarity-score-box.warning .similarity-badge {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--c-warn);
+}
+.similarity-score-box.high .similarity-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--c-danger);
+}
+
+.plagiarism-sentence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.plagiarism-item {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--c-danger);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all var(--t-fast);
+}
+.plagiarism-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.plagiarism-item.warning {
+  border-left-color: var(--c-warn);
+}
+.plagiarism-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.plagiarism-item-source {
+  font-size: 0.8rem;
+  color: var(--t-secondary);
+}
+.plagiarism-item-score {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ff6b6b;
+}
+.plagiarism-original {
+  font-size: 0.88rem;
+  color: var(--t-primary);
+  background: rgba(239, 68, 68, 0.08);
+  padding: 8px 12px;
+  border-radius: 6px;
+  line-height: 1.5;
+}
+.plagiarism-suggestion-box {
+  background: rgba(0, 212, 170, 0.08);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.plagiarism-suggestion-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.plagiarism-suggestion-text {
+  font-size: 0.88rem;
+  color: var(--t-primary);
+  line-height: 1.5;
+}
+
+

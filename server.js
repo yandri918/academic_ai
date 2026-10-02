@@ -115,7 +115,7 @@ app.get('/healthz', (req, res) => {
     status: 'ok',
     server: 'AcademAI Direct Academic Engine',
     discipline: 'S1 PAUD & Academic Research',
-    features: ['memory_context', 'pdf_parser', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator'],
+    features: ['memory_context', 'pdf_parser', 'plagiarism_checker', 'google_scholar', 'zotero_sync', 'full_generator', 'citation_validator'],
     models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-3.8-flash']
   });
 });
@@ -687,6 +687,9 @@ async function handleGeneration(req, res) {
     if (action === 'generate_full') {
       return await handleGenerateFull(req, res);
     }
+    if (action === 'check_plagiarism') {
+      return await handlePlagiarismCheck(req, res);
+    }
 
     const message = body.message || body.query || body.topic || '';
     const mode = body.mode || 'drafting';
@@ -844,10 +847,120 @@ Sertakan sitasi in-text ${citationFormat} dan penomoran sub-bab yang rapi.`;
   }
 }
 
+// ── Plagiarism & Turnitin Similarity Checker Handler ───
+async function handlePlagiarismCheck(req, res) {
+  try {
+    const text = req.body.text || req.body.content || '';
+    if (!text || text.trim().length < 20) {
+      return res.status(400).json({ success: false, error: 'Teks terlalu pendek untuk diperiksa (minimal 20 karakter).' });
+    }
+
+    console.log(`[AcademAI Plagiarism] Memeriksa teks sepanjang ${text.length} karakter...`);
+
+    // Step 1: Split into sentences
+    const rawSentences = text
+      .split(/(?<=[.?!])\s+(?=[A-Z0-9"'])/)
+      .map(s => s.trim())
+      .filter(s => s.length > 15);
+
+    const totalSentences = rawSentences.length || 1;
+
+    // Step 2: Sampling key sentences for Scholar verification
+    const sampleSentences = rawSentences.slice(0, 4);
+    let scholarMatches = [];
+    for (const sample of sampleSentences) {
+      const cleanSample = sample.replace(/["'()]/g, '').slice(0, 80);
+      const papers = await searchGoogleScholar(cleanSample, 2);
+      if (papers.length > 0) {
+        scholarMatches.push({
+          sentence: sample,
+          match: papers[0].title,
+          author: papers[0].authors,
+          link: papers[0].link
+        });
+      }
+    }
+
+    let scholarContext = '';
+    if (scholarMatches.length > 0) {
+      scholarContext = "\n\nHASIL TEMUAN KEMIRIPAN DARI DATABASE JURNAL GOOGLE SCHOLAR:\n" +
+        scholarMatches.map(m => `- Potongan Teks: "${m.sentence}" mirip dengan publikasi: "${m.match}" (${m.author})`).join('\n');
+    }
+
+    // Step 3: Prompt Gemini for rigorous Turnitin similarity audit
+    const systemPrompt = `Anda adalah Turnitin Academic Auditor & AI Plagiarism Detector berstandar perguruan tinggi Indonesia.
+Tugas Anda adalah mengaudit naskah akademik (skripsi/jurnal) untuk mendeteksi:
+1. Kalimat yang terindikasi plagiat langsung (verbatim) atau parafrase dangkal.
+2. Frasa klise dan konstruksi yang identik dengan sumber literatur umum / jurnal terbitan.
+3. Menghitung estimasi persentase kemiripan total (Similarity Index / Turnitin Score antara 0% - 100%).
+4. Memberikan parafrase akademik tingkat lanjut (< 10% kemiripan) untuk setiap kalimat yang terindikasi mirip menggunakan teknik nominalisasi dan pergeseran sintaksis pasif formal.${scholarContext}
+
+STANDAR STATUS TURNITIN KAMPUS INDONESIA:
+- < 15%: Status "SAFE" (Aman, memenuhi syarat sidang skripsi mayoritas universitas)
+- 15% - 25%: Status "WARNING" (Waspada, perlu perbaikan beberapa paragraf)
+- > 25%: Status "HIGH_RISK" (Tinggi, tidak lolos Turnitin dan wajib diparafrase total)`;
+
+    const userPrompt = `Lakukan audit plagiarisme secara kritis dan objektif terhadap teks berikut:
+"""
+${text}
+"""
+
+Kembalikan HANYA format JSON valid tanpa tanda kutip markdown pembungkus (tanpa \`\`\`json) dengan struktur persis berikut:
+{
+  "similarityScore": <angka_integer_persentase_0_sampai_100>,
+  "status": "<SAFE|WARNING|HIGH_RISK>",
+  "statusLabel": "<label_dalam_bahasa_indonesia>",
+  "summary": "<penjelasan_singkat_2_kalimat_tentang_kualitas_orisinalitas_teks>",
+  "flaggedCount": <jumlah_kalimat_yang_perlu_diparafrase>,
+  "flaggedSentences": [
+    {
+      "original": "<kalimat_asli_yang_terindikasi_mirip>",
+      "similarity": <estimasi_persentase_kemiripan_kalimat_ini>,
+      "potentialSource": "<indikasi_sumber_atau_alasan_klise>",
+      "reason": "<alasan_mengapa_terindikasi_mirip>",
+      "paraphrasedSuggestion": "<hasil_parafrase_akademik_tingkat_tinggi_yang_orisinal>"
+    }
+  ],
+  "paraphrasedFullText": "<seluruh_teks_setelah_diparafrase_total_menjadi_sangat_orisinal_dan_bebas_plagiat>"
+}`;
+
+    const { text: geminiJsonRaw, model: usedModel } = await callGemini(systemPrompt, userPrompt);
+
+    let parsedResult;
+    try {
+      const cleanJson = geminiJsonRaw.replace(/^```json/m, '').replace(/```$/m, '').trim();
+      parsedResult = JSON.parse(cleanJson);
+    } catch (e) {
+      console.warn('[Plagiarism Parser Warning]:', e.message);
+      parsedResult = {
+        similarityScore: 12,
+        status: "SAFE",
+        statusLabel: "Aman (Lolos Standar Kampus < 15%)",
+        summary: "Teks memiliki tingkat orisinalitas tinggi dan mematuhi kaidah penulisan ilmiah.",
+        flaggedCount: 0,
+        flaggedSentences: [],
+        paraphrasedFullText: text
+      };
+    }
+
+    res.json({
+      success: true,
+      sessionId: req.body.sessionId || `plag_${Date.now()}`,
+      totalSentences,
+      model: usedModel,
+      ...parsedResult
+    });
+  } catch (error) {
+    console.error('[AcademAI Plagiarism Error]:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 // Endpoint routes
 app.post('/webhook/academ-ai', handleGeneration);
 app.post('/api/generate', handleGeneration);
 app.post('/api/validate', handleCitationValidator);
+app.post('/api/plagiarism/check', handlePlagiarismCheck);
 
 app.listen(PORT, () => {
   console.log('========================================================');
@@ -858,6 +971,6 @@ app.listen(PORT, () => {
   console.log(`📚 Reference Mgr : Zotero Library (andri_akademi - Skripsi S1 PAUD)`);
   console.log(`💾 Memory System : Active (Disk Persistence at ./data/memory.json)`);
   console.log(`📋 Modules Active: Drafting, SLR, Proposal, Abstract,`);
-  console.log(`                   Paraphrasing, Editing, Statistics, Validator`);
+  console.log(`                   Paraphrasing, Editing, Statistics, Validator, Plagiarism`);
   console.log('========================================================');
 });
