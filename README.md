@@ -1,4 +1,4 @@
-# 🎓 AcademAI — Open-Source Multi-Disciplinary Academic Co-Pilot
+# 🎓 AcademAI — An Open-Source Research Companion Built for My Wife's PAUD Thesis
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
@@ -7,7 +7,7 @@
 [![Hacktoberfest 2026](https://img.shields.io/badge/Hacktoberfest-2026%20Submission-orange.svg)](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)
 
 > 🎃 **Submission for [Hacktoberfest Weekend Challenge: Build for a Friend](https://dev.to/challenges/hacktoberfest-weekend-2026-10-01)**  
-> **Dedicated to**: My wife, finishing her undergraduate thesis in **S1 PAUD (Early Childhood Education)** while caring for our family — and expanded into an open-source research partner for university students across **12 academic disciplines**.
+> **Dedicated to**: Helping my wife complete her undergraduate thesis in Early Childhood Education (S1 PAUD), powered by **Google Gemma (Open-Weight)** and **SerpApi** for grounded literature search.
 
 ---
 
@@ -31,16 +31,16 @@ Every evening, I watched my wife sit at our kitchen table overwhelmed by the fri
 ---
 
 ## ✨ Key Capabilities
-
+ 
 | Module | What It Does |
 |---|---|
-| 🔍 **Google Scholar Grounding** | Automatically searches authentic scholarly literature via SerpApi and injects verified findings into the prompt context to prevent hallucinations. |
-| 🛡️ **Citation Validator** | RegEx-based auditing engine that validates in-text citations (APA 7th) and DOI links against academic indices (`VALID`, `PARTIAL`, `INVALID`). |
-| 📊 **PTK Statistics Engine** | Pure JavaScript mathematical engine calculating Paired Sample t-Tests, degrees of freedom, and Hake (1999) N-Gain categories with automated Indonesian pedagogical prose for Bab IV. |
-| 🔄 **Plagiarism Auditor** | Turnitin-style similarity auditor with academic sentence restructuring (nominalization, passive-voice conversion) targeting <15% similarity. |
-| 📑 **Full Thesis Generator** | Drafts complete 5-chapter research documents with bilingual abstracts (Indonesian + English), research matrix, and APA bibliographies in one request. |
+| 🔍 **Traceable Literature Search** | Automatically queries authentic scholarly literature via **SerpApi** (Google Scholar) and provides inspectable links, reducing the risk of hallucinated citations. |
+| 🛡️ **Citation Format & Metadata Checker** | Audits in-text citation formatting (APA 7th) and DOI identifiers against retrieved paper metadata to identify incomplete or unverified references. |
+| 📊 **PTK Statistics Engine** | Pure JavaScript calculation of Paired Sample t-Tests, degrees of freedom, and Hake (1999) N-Gain categories with transparent Indonesian academic prose for Chapter IV (Bab IV). |
+| 🔄 **Academic Paraphrasing Helper** | Suggests syntactic nominalization and formal impersonal passive-voice transformations to improve clarity and academic tone. |
+| 📑 **Assisted Chapter Drafting** | Structures research proposals, literature reviews, and thesis chapters based on user inputs and verified sources, keeping the researcher firmly in control. |
 | 💾 **Document Memory** | Local JSON session memory (`./data/memory.json`) preserving research variables, uploaded documents, and hypotheses across sessions. |
-| 📄 **Native DOCX Export** | Compiles structured research chapters directly into formatted Microsoft Word (`.docx`) files using the open-source `docx` library. |
+| 📄 **Native DOCX Export** | Compiles structured research chapters directly into formatted Microsoft Word (`.docx`) files for advisor review using the open-source `docx` library. |
 
 ---
 
@@ -196,8 +196,8 @@ academic_ai/
 
 ## 🏆 Hacktoberfest 2026 Partner Categories
 
-- **Google Gemini**: Powered by Google Gemini with an intelligent 4-model fallback cascade (`gemini-3.1-flash-lite` → `gemini-3.5-flash-lite` → `gemini-3.7-flash` → `gemini-3.8-flash`) and open-source discipline-aware prompt engineering.
-- **Best Open Source Tool**: Standalone, 100% MIT-licensed Node.js agent harness, pure JS statistics engine, citation validation parser, and vanilla frontend with zero proprietary lock-in.
+- **Best Use of Gemma**: AcademAI uses Google's open-weight **Gemma** (`gemma-4-26b-a4b-it`) as its primary reasoning model for literature synthesis, theory matching, and discussion drafting, wrapped in a lightweight self-hostable harness.
+- **Best Use of SerpApi**: AcademAI integrates **SerpApi** to query the live **Google Scholar** index, grounding thesis writing in verified, peer-reviewed publications and providing students with traceable citation links.
 
 ---
 
