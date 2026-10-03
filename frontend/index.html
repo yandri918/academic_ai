@@ -55,11 +55,22 @@
     </svg>
     AcademAI
   </div>
-  <span class="header-badge">v2.0 · Universal Academic Edition</span>
+  <span class="header-badge" data-i18n="header.badge">v2.0 · Universal Academic Edition</span>
   <div class="header-spacer"></div>
+
+  <!-- Language Switcher Menu (ID / EN) -->
+  <div class="lang-switch" role="group" aria-label="Pilih Bahasa / Select Language">
+    <button class="lang-btn active" id="lang-btn-id" onclick="switchLanguage('id')" title="Bahasa Indonesia" aria-pressed="true">
+      <span class="lang-flag" aria-hidden="true">🇮🇩</span> ID
+    </button>
+    <button class="lang-btn" id="lang-btn-en" onclick="switchLanguage('en')" title="English" aria-pressed="false">
+      <span class="lang-flag" aria-hidden="true">🇬🇧</span> EN
+    </button>
+  </div>
+
   <div class="header-status" id="status-indicator" aria-live="polite">
     <div class="status-dot offline" id="status-dot"></div>
-    <span id="status-text">Menghubungkan…</span>
+    <span id="status-text" data-i18n="header.connecting">Menghubungkan…</span>
   </div>
 </header>
 
@@ -69,19 +80,19 @@
   <!-- ── Tab Navigation ──────────────────── -->
   <nav class="tab-nav" role="tablist" aria-label="Navigasi fitur">
     <button class="tab-btn active" id="tab-chat-btn" role="tab" aria-selected="true" aria-controls="tab-chat" onclick="switchTab('chat')">
-      <span class="tab-icon" aria-hidden="true">💬</span>Chat
+      <span class="tab-icon" aria-hidden="true">💬</span><span data-i18n="nav.chat">Chat</span>
     </button>
     <button class="tab-btn" id="tab-generate-btn" role="tab" aria-selected="false" aria-controls="tab-generate" onclick="switchTab('generate')">
-      <span class="tab-icon" aria-hidden="true">🤖</span>Generate Artikel
+      <span class="tab-icon" aria-hidden="true">🤖</span><span data-i18n="nav.generate">Generate Artikel</span>
     </button>
     <button class="tab-btn" id="tab-validator-btn" role="tab" aria-selected="false" aria-controls="tab-validator" onclick="switchTab('validator')">
-      <span class="tab-icon" aria-hidden="true">🔍</span>Validator Sitasi
+      <span class="tab-icon" aria-hidden="true">🔍</span><span data-i18n="nav.validator">Validator Sitasi</span>
     </button>
     <button class="tab-btn" id="tab-plagiarism-btn" role="tab" aria-selected="false" aria-controls="tab-plagiarism" onclick="switchTab('plagiarism')">
-      <span class="tab-icon" aria-hidden="true">🛡️</span>Cek Plagiat
+      <span class="tab-icon" aria-hidden="true">🛡️</span><span data-i18n="nav.plagiarism">Cek Plagiat</span>
     </button>
     <button class="tab-btn" id="tab-statistics-btn" role="tab" aria-selected="false" aria-controls="tab-statistics" onclick="switchTab('statistics')">
-      <span class="tab-icon" aria-hidden="true">📊</span>Kalkulator Statistik
+      <span class="tab-icon" aria-hidden="true">📊</span><span data-i18n="nav.statistics">Kalkulator Statistik</span>
     </button>
   </nav>
 
@@ -109,29 +120,29 @@
 
           <!-- Discipline Select -->
           <select class="form-select" id="chat-discipline" style="width:auto;font-size:0.8rem;padding:6px 32px 6px 12px;" aria-label="Pilih disiplin ilmu">
-            <option value="general_academic" selected>📚 Umum / Lintas Disiplin</option>
-            <option value="education">🎓 Ilmu Pendidikan</option>
-            <option value="paud">🧸 PAUD & Pendidikan Anak</option>
-            <option value="economics">💰 Ekonomi & Bisnis</option>
-            <option value="law">⚖️ Hukum</option>
-            <option value="psychology">🧠 Psikologi</option>
-            <option value="engineering">⚙️ Teknik</option>
-            <option value="health">🏥 Kesehatan</option>
-            <option value="computer_science">💻 Ilmu Komputer</option>
-            <option value="social">👥 Ilmu Sosial</option>
-            <option value="agriculture">🌾 Pertanian</option>
-            <option value="communication">📡 Komunikasi</option>
+            <option value="general_academic" data-i18n="disc.general_academic" selected>📚 Umum / Lintas Disiplin</option>
+            <option value="education" data-i18n="disc.education">🎓 Ilmu Pendidikan</option>
+            <option value="paud" data-i18n="disc.paud">🧸 PAUD & Pendidikan Anak</option>
+            <option value="economics" data-i18n="disc.economics">💰 Ekonomi & Bisnis</option>
+            <option value="law" data-i18n="disc.law">⚖️ Hukum</option>
+            <option value="psychology" data-i18n="disc.psychology">🧠 Psikologi</option>
+            <option value="engineering" data-i18n="disc.engineering">⚙️ Teknik & Teknologi</option>
+            <option value="health" data-i18n="disc.health">🏥 Kesehatan & Kedokteran</option>
+            <option value="computer_science" data-i18n="disc.computer_science">💻 Ilmu Komputer</option>
+            <option value="social" data-i18n="disc.social">👥 Ilmu Sosial</option>
+            <option value="agriculture" data-i18n="disc.agriculture">🌾 Pertanian</option>
+            <option value="communication" data-i18n="disc.communication">📡 Komunikasi</option>
           </select>
 
           <!-- Memory Context Toggle -->
           <button class="btn btn-ghost btn-sm" id="memory-toggle-btn" onclick="openMemoryModal()" title="Buka Dokumen Memori Riset" aria-label="Buka Dokumen Memori Riset">
-            <span style="font-size:0.95rem;">🧠</span> Memori (<span id="memory-count-badge">0</span>)
+            <span style="font-size:0.95rem;">🧠</span> <span data-i18n="chat.memory_btn">Memori</span> (<span id="memory-count-badge">0</span>)
           </button>
 
           <!-- New Session -->
           <button class="btn btn-ghost btn-sm" onclick="newSession()" title="Mulai sesi baru" aria-label="Mulai sesi baru">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Baru
+            <span data-i18n="chat.new_session_btn">Baru</span>
           </button>
 
           <!-- Session ID (hidden from UI) -->
@@ -147,7 +158,7 @@
             <span id="memory-banner-text">Konteks Aktif: 0 Dokumen di Memori</span>
           </div>
           <div class="memory-banner-actions">
-            <button class="btn btn-ghost btn-xs" onclick="openMemoryModal()">Lihat / Kelola</button>
+            <button class="btn btn-ghost btn-xs" onclick="openMemoryModal()" data-i18n="chat.memory_context_view">Lihat / Kelola</button>
             <button class="btn btn-ghost btn-xs" onclick="clearMemoryContextBanner()" title="Sembunyikan bar ini">✕</button>
           </div>
         </div>
@@ -157,15 +168,15 @@
           <!-- Empty State -->
           <div class="chat-empty" id="chat-empty">
             <div class="chat-empty-icon" aria-hidden="true">🎓</div>
-            <h3>Selamat datang di AcademAI</h3>
-            <p>Asisten riset & penulisan artikel ilmiah berbasis AI untuk mahasiswa, dosen, dan peneliti Indonesia.</p>
+            <h3 data-i18n="chat.welcome_title">Selamat datang di AcademAI</h3>
+            <p data-i18n="chat.welcome_subtitle">Asisten riset & penulisan artikel ilmiah berbasis AI untuk mahasiswa, dosen, dan peneliti Indonesia.</p>
             <div class="chat-suggestions" role="group" aria-label="Saran pertanyaan">
-              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Bantu saya menulis latar belakang penelitian">✍️ Bantu tulis latar belakang penelitian</button>
-              <button class="suggestion-chip" onclick="triggerPdfUpload()" aria-label="Upload PDF Jurnal">📄 Upload PDF Jurnal / Skripsi</button>
-              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Buat tabel penelitian terdahulu">📊 Buat tabel penelitian terdahulu</button>
-              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Parafrase teks ini untuk menghindari plagiarisme">🔄 Parafrase untuk hindari plagiat</button>
-              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Buat abstrak Indonesia dan Inggris">📄 Buat abstrak Indonesia & Inggris</button>
-              <button class="suggestion-chip" onclick="sendSuggestion(this)" aria-label="Gunakan saran: Interpretasikan hasil SPSS saya">📈 Interpretasikan hasil SPSS saya</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chat.sug_background" aria-label="Gunakan saran: Bantu saya menulis latar belakang penelitian">✍️ Bantu tulis latar belakang penelitian</button>
+              <button class="suggestion-chip" onclick="triggerPdfUpload()" data-i18n="chat.sug_upload_pdf" aria-label="Upload PDF Jurnal">📄 Upload PDF Jurnal / Skripsi</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chat.sug_matrix" aria-label="Gunakan saran: Buat tabel penelitian terdahulu">📊 Buat tabel penelitian terdahulu</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chat.sug_paraphrase" aria-label="Gunakan saran: Parafrase teks ini untuk menghindari plagiarisme">🔄 Parafrase untuk hindari plagiat</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chat.sug_abstract" aria-label="Gunakan saran: Buat abstrak Indonesia dan Inggris">📄 Buat abstrak Indonesia & Inggris</button>
+              <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chat.sug_spss" aria-label="Gunakan saran: Interpretasikan hasil SPSS saya">📈 Interpretasikan hasil SPSS saya</button>
             </div>
           </div>
         </div>
@@ -177,22 +188,23 @@
               id="chat-input"
               class="chat-textarea"
               placeholder="Tulis pesan Anda… (Shift+Enter untuk baris baru)"
+              data-i18n-placeholder="chat.input_placeholder"
               rows="1"
               maxlength="8000"
               aria-label="Pesan untuk AcademAI"
               onkeydown="handleChatKey(event)"
               oninput="autoResizeTextarea(this)"
             ></textarea>
-            <button class="chat-attach-btn" id="pdf-attach-btn" onclick="triggerPdfUpload()" aria-label="Upload PDF Jurnal / Skripsi" title="Upload PDF Jurnal / Skripsi untuk memori konteks">
+            <button class="chat-attach-btn" id="pdf-attach-btn" onclick="triggerPdfUpload()" aria-label="Upload PDF Jurnal / Skripsi" title="Upload PDF Jurnal / Skripsi untuk memori konteks" data-i18n-title="chat.upload_pdf_title">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
             </button>
-            <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()" aria-label="Kirim pesan" title="Kirim (Enter)">
+            <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()" aria-label="Kirim pesan" title="Kirim (Enter)" data-i18n-title="chat.send_btn_title">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
               </svg>
             </button>
           </div>
-          <p class="chat-footer-hint">AcademAI dapat membuat kesalahan. Selalu verifikasi sitasi & konsultasikan dengan pembimbing Anda.</p>
+          <p class="chat-footer-hint" data-i18n="chat.footer_hint">AcademAI dapat membuat kesalahan. Selalu verifikasi sitasi & konsultasikan dengan pembimbing Anda.</p>
         </div>
 
       </div>
@@ -203,23 +215,24 @@
          ════════════════════════════════════ -->
     <section id="tab-generate" class="tab-content" role="tabpanel" aria-labelledby="tab-generate-btn">
       <div class="generate-layout">
-        <h1 class="section-title">Generate Artikel Otomatis</h1>
-        <p class="section-subtitle">Isi detail penelitian → AcademAI otomatis menulis seluruh bab (Abstrak → BAB I–V → Daftar Pustaka)</p>
+        <h1 class="section-title" data-i18n="gen.title">Generate Artikel Otomatis</h1>
+        <p class="section-subtitle" data-i18n="gen.subtitle">Isi detail penelitian → AcademAI otomatis menulis seluruh bab (Abstrak → BAB I–V → Daftar Pustaka)</p>
 
         <!-- Form Card -->
         <div class="glass-card generate-card">
           <div class="generate-card-title">
             <div class="icon-wrap" aria-hidden="true">📝</div>
-            Detail Penelitian
+            <span data-i18n="gen.card_title">Detail Penelitian</span>
           </div>
 
           <div class="form-grid" style="gap:20px;">
             <!-- Topic -->
             <div class="form-group">
-              <label class="form-label" for="gen-topic">Topik / Judul Penelitian *</label>
+              <label class="form-label" for="gen-topic" data-i18n="gen.label_topic">Topik / Judul Penelitian *</label>
               <input
                 type="text" id="gen-topic" class="form-input"
                 placeholder="Cth: Pengaruh Media Sosial terhadap Motivasi Belajar Mahasiswa Generasi Z"
+                data-i18n-placeholder="gen.topic_placeholder"
                 aria-required="true"
               />
             </div>
@@ -227,27 +240,27 @@
             <!-- 2-col row -->
             <div class="form-grid form-grid-2">
               <div class="form-group">
-                <label class="form-label" for="gen-discipline">Disiplin Ilmu *</label>
+                <label class="form-label" for="gen-discipline" data-i18n="gen.label_discipline">Disiplin Ilmu *</label>
                 <select id="gen-discipline" class="form-select" aria-required="true">
-                  <option value="general_academic" selected>📚 Umum / Lintas Disiplin</option>
-                  <option value="education">🎓 Ilmu Pendidikan</option>
-                  <option value="paud">🧸 PAUD & Pendidikan Anak</option>
-                  <option value="economics">💰 Ekonomi & Bisnis</option>
-                  <option value="law">⚖️ Hukum</option>
-                  <option value="psychology">🧠 Psikologi</option>
-                  <option value="engineering">⚙️ Teknik & Teknologi</option>
-                  <option value="health">🏥 Kesehatan & Kedokteran</option>
-                  <option value="computer_science">💻 Ilmu Komputer</option>
-                  <option value="social">👥 Ilmu Sosial</option>
-                  <option value="agriculture">🌾 Pertanian</option>
-                  <option value="communication">📡 Komunikasi</option>
+                  <option value="general_academic" data-i18n="disc.general_academic" selected>📚 Umum / Lintas Disiplin</option>
+                  <option value="education" data-i18n="disc.education">🎓 Ilmu Pendidikan</option>
+                  <option value="paud" data-i18n="disc.paud">🧸 PAUD & Pendidikan Anak</option>
+                  <option value="economics" data-i18n="disc.economics">💰 Ekonomi & Bisnis</option>
+                  <option value="law" data-i18n="disc.law">⚖️ Hukum</option>
+                  <option value="psychology" data-i18n="disc.psychology">🧠 Psikologi</option>
+                  <option value="engineering" data-i18n="disc.engineering">⚙️ Teknik & Teknologi</option>
+                  <option value="health" data-i18n="disc.health">🏥 Kesehatan & Kedokteran</option>
+                  <option value="computer_science" data-i18n="disc.computer_science">💻 Ilmu Komputer</option>
+                  <option value="social" data-i18n="disc.social">👥 Ilmu Sosial</option>
+                  <option value="agriculture" data-i18n="disc.agriculture">🌾 Pertanian</option>
+                  <option value="communication" data-i18n="disc.communication">📡 Komunikasi</option>
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label" for="gen-language">Bahasa Output</label>
+                <label class="form-label" for="gen-language" data-i18n="gen.label_language">Bahasa Output</label>
                 <select id="gen-language" class="form-select">
-                  <option value="indonesia" selected>🇮🇩 Bahasa Indonesia</option>
-                  <option value="english">🇬🇧 English</option>
+                  <option value="indonesia" data-i18n="gen.lang_id" selected>🇮🇩 Bahasa Indonesia</option>
+                  <option value="english" data-i18n="gen.lang_en">🇬🇧 English</option>
                 </select>
               </div>
             </div>
@@ -255,7 +268,7 @@
             <!-- 3-col row -->
             <div class="form-grid form-grid-3">
               <div class="form-group">
-                <label class="form-label" for="gen-journal-count">Jumlah Jurnal</label>
+                <label class="form-label" for="gen-journal-count" data-i18n="gen.label_journals">Jumlah Jurnal</label>
                 <select id="gen-journal-count" class="form-select">
                   <option value="8">8 jurnal</option>
                   <option value="10" selected>10 jurnal</option>
@@ -264,7 +277,7 @@
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label" for="gen-year-filter">Filter Tahun</label>
+                <label class="form-label" for="gen-year-filter" data-i18n="gen.label_years">Filter Tahun</label>
                 <select id="gen-year-filter" class="form-select">
                   <option value="2020-2025">2020–2025</option>
                   <option value="2019-2024" selected>2019–2024</option>
@@ -273,7 +286,7 @@
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label" for="gen-citation-format">Format Sitasi</label>
+                <label class="form-label" for="gen-citation-format" data-i18n="gen.label_citation_format">Format Sitasi</label>
                 <select id="gen-citation-format" class="form-select">
                   <option value="APA7" selected>APA 7th Edition</option>
                   <option value="APA6">APA 6th Edition</option>
@@ -286,7 +299,7 @@
             <!-- Validate Citations checkbox -->
             <div class="flex items-center gap-2" style="margin-top:4px;">
               <input type="checkbox" id="gen-validate-citations" checked style="accent-color:var(--c-primary);width:16px;height:16px;" />
-              <label for="gen-validate-citations" style="font-size:0.85rem;color:var(--t-secondary);cursor:pointer;">
+              <label for="gen-validate-citations" data-i18n="gen.checkbox_validate" style="font-size:0.85rem;color:var(--t-secondary);cursor:pointer;">
                 Validasi sitasi otomatis setelah generate
               </label>
             </div>
@@ -297,11 +310,11 @@
         <div class="flex items-center gap-3 mb-4">
           <button class="btn btn-primary btn-lg" id="gen-btn" onclick="generateFull()" aria-label="Mulai generate artikel">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg>
-            Generate Artikel
+            <span data-i18n="gen.btn_generate">Generate Artikel</span>
           </button>
           <button class="btn btn-secondary" onclick="resetGenerate()" aria-label="Reset form generate">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Reset
+            <span data-i18n="gen.btn_reset">Reset</span>
           </button>
           <div class="ml-auto text-sm text-muted" id="gen-status-text"></div>
         </div>
@@ -314,30 +327,30 @@
         <!-- Output Card -->
         <div class="glass-card output-card" id="gen-output-card">
           <div class="output-toolbar">
-            <span class="output-toolbar-title" id="output-title">Output Dokumen</span>
-            <button class="btn btn-secondary btn-sm" onclick="saveCurrentOutputToMemory()" id="save-mem-btn" style="display:none;" title="Simpan artikel ini ke memori konteks riset">
+            <span class="output-toolbar-title" id="output-title" data-i18n="gen.output_title">Output Dokumen</span>
+            <button class="btn btn-secondary btn-sm" onclick="saveCurrentOutputToMemory()" id="save-mem-btn" style="display:none;" title="Simpan artikel ini ke memori konteks riset" data-i18n="gen.btn_save_mem">
               🧠 Simpan ke Memori
             </button>
-            <button class="btn btn-accent btn-sm" onclick="continueInChatWithContext()" id="continue-chat-btn" style="display:none;" title="Lanjutkan di Chat dengan konteks draf ini">
+            <button class="btn btn-accent btn-sm" onclick="continueInChatWithContext()" id="continue-chat-btn" style="display:none;" title="Lanjutkan di Chat dengan konteks draf ini" data-i18n="gen.btn_continue_chat">
               💬 Lanjutkan di Chat
             </button>
             <button class="btn btn-secondary btn-sm" onclick="copyOutput()" id="copy-btn" style="display:none;" aria-label="Salin konten">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Salin
+              <span data-i18n="gen.btn_copy">Salin</span>
             </button>
             <button class="btn btn-primary btn-sm" onclick="downloadOutput()" id="download-btn" style="display:none;" aria-label="Download dokumen Markdown">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download .md
+              <span data-i18n="gen.btn_download_md">Download .md</span>
             </button>
             <button class="btn btn-primary btn-sm" onclick="downloadOutputDocx()" id="download-docx-btn" style="display:none;background:linear-gradient(135deg,#1e40af,#3b82f6);border-color:#60a5fa;" aria-label="Download dokumen Microsoft Word (.docx)" title="Download naskah skripsi berformat Word (.docx) standar 4-3-3-3 cm & Times New Roman">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              📥 Word (.docx)
+              <span data-i18n="gen.btn_download_docx">📥 Word (.docx)</span>
             </button>
           </div>
           <div class="output-body" id="gen-output-body">
             <div class="output-placeholder">
               <div class="output-placeholder-icon" aria-hidden="true">📄</div>
-              <p>Dokumen akan muncul di sini setelah generate selesai</p>
+              <p data-i18n="gen.output_placeholder">Dokumen akan muncul di sini setelah generate selesai</p>
             </div>
           </div>
         </div>
@@ -350,29 +363,30 @@
          ════════════════════════════════════ -->
     <section id="tab-validator" class="tab-content" role="tabpanel" aria-labelledby="tab-validator-btn">
       <div class="validator-layout">
-        <h1 class="section-title">Validator Sitasi</h1>
-        <p class="section-subtitle">Paste teks berisi sitasi APA/DOI → AcademAI memverifikasi ke Semantic Scholar secara otomatis</p>
+        <h1 class="section-title" data-i18n="val.title">Validator Sitasi</h1>
+        <p class="section-subtitle" data-i18n="val.subtitle">Paste teks berisi sitasi APA/DOI → AcademAI memverifikasi ke Semantic Scholar secara otomatis</p>
 
         <!-- Input Card -->
         <div class="glass-card validator-input-card">
           <div class="form-group" style="margin-bottom:16px;">
-            <label class="form-label" for="validator-input">Teks yang Mengandung Sitasi</label>
+            <label class="form-label" for="validator-input" data-i18n="val.input_label">Teks yang Mengandung Sitasi</label>
             <textarea
               id="validator-input" class="form-textarea"
               placeholder="Cth: Menurut Santoso et al. (2023) digitalisasi UMKM meningkat signifikan. Penelitian oleh Wijaya (2021) juga menunjukkan... (DOI: 10.1234/abc.2023.01)"
+              data-i18n-placeholder="val.input_placeholder"
               style="min-height:160px;"
               aria-label="Teks berisi sitasi yang akan divalidasi"
             ></textarea>
-            <div class="form-hint">Mendukung format: (Nama, Tahun), (Nama et al., Tahun), dan DOI. Maks 20 sitasi per validasi.</div>
+            <div class="form-hint" data-i18n="val.input_hint">Mendukung format: (Nama, Tahun), (Nama et al., Tahun), dan DOI. Maks 20 sitasi per validasi.</div>
           </div>
           <div class="flex items-center gap-3">
             <button class="btn btn-primary" id="validate-btn" onclick="validateCitations()" aria-label="Mulai validasi sitasi">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              Validasi Sekarang
+              <span data-i18n="val.btn_validate">Validasi Sekarang</span>
             </button>
             <button class="btn btn-ghost" onclick="clearValidator()" aria-label="Hapus input validator">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-              Hapus
+              <span data-i18n="val.btn_clear">Hapus</span>
             </button>
             <div class="ml-auto text-sm text-muted" id="validator-status"></div>
           </div>
@@ -382,19 +396,19 @@
         <div class="validator-summary hidden" id="validator-summary" role="region" aria-label="Ringkasan hasil validasi">
           <div class="summary-stat total">
             <div class="summary-stat-num" id="stat-total">0</div>
-            <div class="summary-stat-label">Total Sitasi</div>
+            <div class="summary-stat-label" data-i18n="val.stat_total">Total Sitasi</div>
           </div>
           <div class="summary-stat valid">
             <div class="summary-stat-num" id="stat-valid">0</div>
-            <div class="summary-stat-label">✅ Valid</div>
+            <div class="summary-stat-label" data-i18n="val.stat_valid">✅ Valid</div>
           </div>
           <div class="summary-stat partial">
             <div class="summary-stat-num" id="stat-partial">0</div>
-            <div class="summary-stat-label">⚠️ Perlu Cek</div>
+            <div class="summary-stat-label" data-i18n="val.stat_partial">⚠️ Perlu Cek</div>
           </div>
           <div class="summary-stat invalid">
             <div class="summary-stat-num" id="stat-invalid">0</div>
-            <div class="summary-stat-label">❌ Tidak Valid</div>
+            <div class="summary-stat-label" data-i18n="val.stat_invalid">❌ Tidak Valid</div>
           </div>
         </div>
 
@@ -411,19 +425,19 @@
          ════════════════════════════════════ -->
     <section id="tab-plagiarism" class="tab-content" role="tabpanel" aria-labelledby="tab-plagiarism-btn">
       <div class="plagiarism-layout">
-        <h1 class="section-title">Cek Plagiarisme & Skor Kemiripan Turnitin</h1>
-        <p class="section-subtitle">Analisis tingkat kemiripan teks dengan indeks jurnal Google Scholar, deteksi kalimat rentan plagiat, dan parafrase instan otomatis (&lt; 15%).</p>
+        <h1 class="section-title" data-i18n="plag.title">Cek Plagiarisme & Skor Kemiripan Turnitin</h1>
+        <p class="section-subtitle" data-i18n="plag.subtitle">Analisis tingkat kemiripan teks dengan indeks jurnal Google Scholar, deteksi kalimat rentan plagiat, dan parafrase instan otomatis (&lt; 15%).</p>
 
         <!-- Input Card -->
         <div class="glass-card plagiarism-input-card">
           <div class="form-group" style="margin-bottom:16px;">
             <div class="flex items-center justify-between mb-2">
-              <label class="form-label" for="plagiarism-input" style="margin-bottom:0;">Teks yang Akan Diperiksa</label>
+              <label class="form-label" for="plagiarism-input" data-i18n="plag.input_label" style="margin-bottom:0;">Teks yang Akan Diperiksa</label>
               <div class="flex items-center gap-2">
-                <button class="btn btn-ghost btn-xs" onclick="loadFromActiveMemoryForPlagiarism()" title="Ambil teks dari draf memori">
+                <button class="btn btn-ghost btn-xs" onclick="loadFromActiveMemoryForPlagiarism()" title="Ambil teks dari draf memori" data-i18n="plag.btn_load_mem">
                   🧠 Muat dari Memori
                 </button>
-                <button class="btn btn-ghost btn-xs" onclick="triggerPlagiarismPdfUpload()" title="Upload file PDF untuk cek plagiat">
+                <button class="btn btn-ghost btn-xs" onclick="triggerPlagiarismPdfUpload()" title="Upload file PDF untuk cek plagiat" data-i18n="plag.btn_upload_pdf">
                   📄 Upload PDF
                 </button>
               </div>
@@ -431,20 +445,21 @@
             <textarea
               id="plagiarism-input" class="form-textarea"
               placeholder="Paste paragraf, bab skripsi, atau draf artikel Anda di sini... (Maksimal 15.000 karakter)"
+              data-i18n-placeholder="plag.input_placeholder"
               style="min-height:170px;"
               aria-label="Teks untuk cek plagiat"
             ></textarea>
-            <div class="form-hint">Mendukung teks bahasa Indonesia & bahasa Inggris. Diuji silang dengan data Google Scholar dan analisis sintaksis Turnitin.</div>
+            <div class="form-hint" data-i18n="plag.input_hint">Mendukung teks bahasa Indonesia & bahasa Inggris. Diuji silang dengan data Google Scholar dan analisis sintaksis Turnitin.</div>
           </div>
           
           <div class="flex items-center gap-3">
             <button class="btn btn-primary" id="plagiarism-btn" onclick="checkPlagiarism()" aria-label="Mulai cek plagiat">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Cek Kemiripan Sekarang
+              <span data-i18n="plag.btn_check">Cek Kemiripan Sekarang</span>
             </button>
             <button class="btn btn-ghost" onclick="clearPlagiarism()" aria-label="Hapus input">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-              Hapus
+              <span data-i18n="plag.btn_clear">Hapus</span>
             </button>
             <div class="ml-auto text-sm text-muted" id="plagiarism-status"></div>
           </div>
@@ -454,29 +469,29 @@
         <div class="plagiarism-summary hidden" id="plagiarism-summary" role="region" aria-label="Hasil skor kemiripan">
           <div class="similarity-score-box" id="similarity-score-box">
             <div class="similarity-percentage" id="stat-similarity">0%</div>
-            <div class="similarity-label" id="stat-similarity-label">Indeks Kemiripan</div>
+            <div class="similarity-label" id="stat-similarity-label" data-i18n="plag.stat_similarity">Indeks Kemiripan</div>
             <div class="similarity-badge" id="stat-similarity-badge">🟢 Aman (&lt; 15%)</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-num" id="stat-total-sentences">0</div>
-            <div class="summary-stat-label">Total Kalimat</div>
+            <div class="summary-stat-label" data-i18n="plag.stat_total_sentences">Total Kalimat</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-num" id="stat-flagged-sentences" style="color:var(--c-danger);">0</div>
-            <div class="summary-stat-label">⚠️ Perlu Parafrase</div>
+            <div class="summary-stat-label" data-i18n="plag.stat_flagged">⚠️ Perlu Parafrase</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-num" id="stat-unique-percentage" style="color:var(--c-success);">100%</div>
-            <div class="summary-stat-label">✨ Orisinalitas</div>
+            <div class="summary-stat-label" data-i18n="plag.stat_originality">✨ Orisinalitas</div>
           </div>
         </div>
 
         <!-- Detailed Sentence Breakdown & Auto-Paraphrase Section -->
         <div class="plagiarism-results-wrap hidden" id="plagiarism-results-wrap">
           <div class="flex items-center justify-between mb-3">
-            <h3 style="font-size:1.05rem;font-weight:700;">Deteksi Kalimat & Rekomendasi Parafrase Turnitin</h3>
+            <h3 style="font-size:1.05rem;font-weight:700;" data-i18n="plag.section_detection">Deteksi Kalimat & Rekomendasi Parafrase Turnitin</h3>
             <button class="btn btn-accent btn-sm" onclick="applyFullAutoParaphrase()" id="btn-full-paraphrase">
-              🔄 Terapkan Parafrase Otomatis (&lt; 15%)
+              <span data-i18n="plag.btn_auto_paraphrase">🔄 Terapkan Parafrase Otomatis (&lt; 15%)</span>
             </button>
           </div>
 
@@ -495,11 +510,11 @@
       <div class="validator-layout">
         <div class="flex items-center justify-between mb-2">
           <div>
-            <h1 class="section-title">Kalkulator Statistik Akademik</h1>
-            <p class="section-subtitle">Hitung Uji Beda Paired Sample t-Test &amp; N-Gain Score (Hake, 1999) + Narasi Pembahasan BAB IV Otomatis</p>
+            <h1 class="section-title" data-i18n="stat.title">Kalkulator Statistik Akademik</h1>
+            <p class="section-subtitle" data-i18n="stat.subtitle">Hitung Uji Beda Paired Sample t-Test &amp; N-Gain Score (Hake, 1999) + Narasi Pembahasan BAB IV Otomatis</p>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="loadSampleStatsData()" title="Muat contoh data nilai siswa PAUD">
-            🎲 Contoh Data PAUD (N=20)
+            <span data-i18n="stat.btn_sample_paud">🎲 Contoh Data PAUD (N=20)</span>
           </button>
         </div>
 
@@ -507,22 +522,22 @@
         <div class="glass-card validator-input-card mb-4">
           <div class="grid-2-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
             <div class="form-group">
-              <label class="form-label" for="stat-var-name">Variabel Penelitian</label>
+              <label class="form-label" for="stat-var-name" data-i18n="stat.label_var_name">Variabel Penelitian</label>
               <input type="text" id="stat-var-name" class="form-input" value="Kemampuan Motorik Halus Anak Usia Dini" placeholder="Cth: Keterampilan Motorik Halus" />
             </div>
             <div class="form-group">
-              <label class="form-label" for="stat-max-score">Skor Maksimal Skala</label>
+              <label class="form-label" for="stat-max-score" data-i18n="stat.label_max_score">Skor Maksimal Skala</label>
               <input type="number" id="stat-max-score" class="form-input" value="100" min="1" max="1000" />
             </div>
           </div>
 
           <div class="grid-2-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
             <div class="form-group">
-              <label class="form-label" for="stat-pretest">Nilai Pre-test (Pisahkan dengan koma atau spasi)</label>
+              <label class="form-label" for="stat-pretest" data-i18n="stat.label_pretest">Nilai Pre-test (Pisahkan dengan koma atau spasi)</label>
               <textarea id="stat-pretest" class="form-textarea" style="min-height:90px;" placeholder="50, 55, 60, 65, 58, 62, 54, 50, 60, 64..."></textarea>
             </div>
             <div class="form-group">
-              <label class="form-label" for="stat-posttest">Nilai Post-test (Jumlah harus sama dengan Pre-test)</label>
+              <label class="form-label" for="stat-posttest" data-i18n="stat.label_posttest">Nilai Post-test (Jumlah harus sama dengan Pre-test)</label>
               <textarea id="stat-posttest" class="form-textarea" style="min-height:90px;" placeholder="78, 82, 85, 90, 84, 88, 80, 76, 86, 92..."></textarea>
             </div>
           </div>
@@ -530,9 +545,11 @@
           <div class="flex items-center gap-3">
             <button class="btn btn-primary" id="btn-calc-stats" onclick="runStatsCalculation()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-              ⚡ Hitung t-Test &amp; N-Gain
+              <span data-i18n="stat.btn_calc">⚡ Hitung t-Test &amp; N-Gain</span>
             </button>
-            <button class="btn btn-ghost" onclick="clearStatsForm()">Hapus</button>
+            <button class="btn btn-ghost" onclick="clearStatsForm()">
+              <span data-i18n="stat.btn_clear">Hapus</span>
+            </button>
             <div class="ml-auto text-sm text-muted" id="stat-status-text"></div>
           </div>
         </div>
@@ -541,32 +558,32 @@
         <div class="validator-summary hidden" id="stats-summary-wrap" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
           <div class="summary-stat">
             <div class="summary-stat-num" id="stat-res-pre">0</div>
-            <div class="summary-stat-label">Rata-rata Pre-test</div>
+            <div class="summary-stat-label" data-i18n="stat.res_pre">Rata-rata Pre-test</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-num" id="stat-res-post" style="color:var(--c-primary);">0</div>
-            <div class="summary-stat-label">Rata-rata Post-test</div>
+            <div class="summary-stat-label" data-i18n="stat.res_post">Rata-rata Post-test</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-num" id="stat-res-t" style="color:var(--c-accent);">0</div>
-            <div class="summary-stat-label" id="stat-res-p">t-Hitung (p &lt; .05)</div>
+            <div class="summary-stat-label" id="stat-res-p" data-i18n="stat.res_t">t-Hitung (p &lt; .05)</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-num" id="stat-res-gain" style="color:var(--c-success);">0%</div>
-            <div class="summary-stat-label" id="stat-res-gain-cat">N-Gain (Efektif)</div>
+            <div class="summary-stat-label" id="stat-res-gain-cat" data-i18n="stat.res_gain">N-Gain (Efektif)</div>
           </div>
         </div>
 
         <!-- Narrative & Output Section -->
         <div class="glass-card hidden" id="stats-narrative-card" style="padding:24px;">
           <div class="flex items-center justify-between mb-3">
-            <h3 style="font-size:1.1rem;font-weight:700;">📝 Narasi Pembahasan Bab IV (Format Baku Skripsi)</h3>
+            <h3 style="font-size:1.1rem;font-weight:700;" data-i18n="stat.narrative_title">📝 Narasi Pembahasan Bab IV (Format Baku Skripsi)</h3>
             <div class="flex items-center gap-2">
-              <button class="btn btn-secondary btn-sm" onclick="saveStatsToMemory()" id="btn-save-stats-mem">
+              <button class="btn btn-secondary btn-sm" onclick="saveStatsToMemory()" id="btn-save-stats-mem" data-i18n="stat.btn_save_mem">
                 🧠 Simpan ke Memori
               </button>
               <button class="btn btn-primary btn-sm" onclick="copyStatsNarrative()">
-                📋 Salin Teks Bab IV
+                <span data-i18n="stat.btn_copy_bab4">📋 Salin Teks Bab IV</span>
               </button>
             </div>
           </div>
@@ -589,11 +606,11 @@
     <div class="modal-header">
       <div class="flex items-center gap-2">
         <span style="font-size:1.4rem;">🧠</span>
-        <h3 style="font-size:1.15rem;font-weight:700;">Memori Dokumen & Konteks Riset</h3>
+        <h3 style="font-size:1.15rem;font-weight:700;" data-i18n="mem.modal_title">Memori Dokumen &amp; Konteks Riset</h3>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="closeMemoryModal()">✕</button>
     </div>
-    <p class="text-sm text-muted" style="margin-top:8px;margin-bottom:14px;line-height:1.5;">
+    <p class="text-sm text-muted" style="margin-top:8px;margin-bottom:14px;line-height:1.5;" data-i18n="mem.modal_desc" data-i18n-html="true">
       Dokumen di bawah ini otomatis menjadi <strong>konteks aktif</strong>. AcademAI akan merujuk dokumen ini untuk menghasilkan kelanjutan bab, pembahasan, instrumen, maupun abstrak secara sinkron.
     </p>
     
@@ -601,10 +618,10 @@
     <div class="pdf-upload-box" onclick="triggerPdfUpload()" title="Klik untuk mengunggah PDF">
       <span class="pdf-upload-icon">📄</span>
       <div class="pdf-upload-info">
-        <span class="pdf-upload-title">Unggah Jurnal / Dokumen PDF</span>
-        <span class="pdf-upload-sub">Pilih file PDF (maks. 35MB). Teks diekstrak dan otomatis tersimpan ke Memori Konteks.</span>
+        <span class="pdf-upload-title" data-i18n="mem.upload_title">Unggah Jurnal / Dokumen PDF</span>
+        <span class="pdf-upload-sub" data-i18n="mem.upload_sub">Pilih file PDF (maks. 35MB). Teks diekstrak dan otomatis tersimpan ke Memori Konteks.</span>
       </div>
-      <button class="btn btn-secondary btn-xs" type="button">Pilih PDF</button>
+      <button class="btn btn-secondary btn-xs" type="button" data-i18n="mem.btn_select_pdf">Pilih PDF</button>
     </div>
     
     <div id="memory-docs-list" class="memory-docs-list">
@@ -615,14 +632,17 @@
     <input type="file" id="pdf-file-input" accept=".pdf" style="display:none;" onchange="handlePdfUpload(event)" />
 
     <div class="memory-modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="promptAddNewMemoryDoc()">+ Tambah Dokumen Manual</button>
+      <button class="btn btn-ghost btn-sm" onclick="promptAddNewMemoryDoc()" data-i18n="mem.btn_add_manual">+ Tambah Dokumen Manual</button>
       <div class="ml-auto flex items-center gap-2">
-        <button class="btn btn-danger btn-sm" onclick="clearAllSessionMemory()">Kosongkan</button>
-        <button class="btn btn-primary btn-sm" onclick="closeMemoryModal()">Tutup</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllSessionMemory()" data-i18n="mem.btn_clear_all">Kosongkan</button>
+        <button class="btn btn-primary btn-sm" onclick="closeMemoryModal()" data-i18n="mem.btn_close">Tutup</button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Internationalization (i18n) Engine -->
+<script src="i18n.js"></script>
 
 <!-- User Config (Railway URL, etc.) — Edit config.js -->
 <script src="config.js"></script>

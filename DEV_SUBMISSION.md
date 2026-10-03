@@ -259,6 +259,7 @@ Throughout the session, the agent and I:
 - Connected SerpApi for live Google Scholar index querying and grounded literature injection.
 - Built and verified the pure JavaScript statistical engine for Classroom Action Research (PTK) and Hake's N-Gain formulas.
 - Configured Google Gemini with an automated 4-model fallback cascade.
+- Implemented a seamless bilingual interface (Indonesian 🇮🇩 & English 🇬🇧) with an integrated header language switcher and persistent user localization.
 - Packaged the application with Docker and verified the live cloud deployment on Railway with automated `/healthz` monitoring.
 
 ---

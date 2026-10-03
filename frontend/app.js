@@ -24,27 +24,37 @@ const CONFIG = {
   IS_RAILWAY:        _n8nBase.includes('railway.app'),
 };
 
-// ── Available Modes ──────────────────────────
-const MODES = [
-  { id: 'drafting',     icon: '✍️',  label: 'Drafting',      desc: 'Tulis konten akademik baru' },
-  { id: 'editing',      icon: '✏️',  label: 'Editing',       desc: 'Review & perbaiki tulisan' },
-  { id: 'paraphrasing', icon: '🔄',  label: 'Paraphrasing',  desc: 'Parafrase hindari plagiat' },
-  { id: 'SLR',          icon: '📚',  label: 'SLR',           desc: 'Systematic Literature Review' },
-  { id: 'proposal',     icon: '📋',  label: 'Proposal',      desc: 'Buat proposal penelitian' },
-  { id: 'abstract',     icon: '📄',  label: 'Abstract',      desc: 'Abstrak Indonesia + Inggris' },
-  { id: 'statistics',   icon: '📊',  label: 'Statistics',    desc: 'Interpretasi hasil SPSS/R' },
-];
+// ── Available Modes (Localized) ───────────────
+function getModes() {
+  const _t = (k, fb) => (window.t ? window.t(k) : fb);
+  return [
+    { id: 'drafting',     icon: '✍️',  label: _t('chat.mode.drafting.label', 'Drafting'),      desc: _t('chat.mode.drafting.desc', 'Tulis konten akademik baru') },
+    { id: 'editing',      icon: '✏️',  label: _t('chat.mode.editing.label', 'Editing'),       desc: _t('chat.mode.editing.desc', 'Review & perbaiki tulisan') },
+    { id: 'paraphrasing', icon: '🔄',  label: _t('chat.mode.paraphrasing.label', 'Paraphrasing'),  desc: _t('chat.mode.paraphrasing.desc', 'Parafrase hindari plagiat') },
+    { id: 'SLR',          icon: '📚',  label: _t('chat.mode.slr.label', 'SLR'),           desc: _t('chat.mode.slr.desc', 'Systematic Literature Review') },
+    { id: 'proposal',     icon: '📋',  label: _t('chat.mode.proposal.label', 'Proposal'),      desc: _t('chat.mode.proposal.desc', 'Buat proposal penelitian') },
+    { id: 'abstract',     icon: '📄',  label: _t('chat.mode.abstract.label', 'Abstract'),      desc: _t('chat.mode.abstract.desc', 'Abstrak Indonesia + Inggris') },
+    { id: 'statistics',   icon: '📊',  label: _t('chat.mode.statistics.label', 'Statistics'),    desc: _t('chat.mode.statistics.desc', 'Interpretasi hasil SPSS/R') },
+  ];
+}
 
-const GENERATE_STEPS = [
-  { id: 'research',   label: '🔍 Riset\nJurnal' },
-  { id: 'abstrak',    label: '📄\nAbstrak' },
-  { id: 'bab1',       label: '📖\nBAB I' },
-  { id: 'bab2',       label: '📚\nBAB II' },
-  { id: 'bab3',       label: '⚙️\nBAB III' },
-  { id: 'bab4',       label: '📊\nBAB IV' },
-  { id: 'bab5',       label: '🏁\nBAB V' },
-  { id: 'pustaka',    label: '📑\nDaftar\nPustaka' },
-];
+let MODES = getModes();
+
+function getGenerateSteps() {
+  const _t = (k, fb) => (window.t ? window.t(k) : fb);
+  return [
+    { id: 'research',   label: _t('step.research', '🔍 Riset\nJurnal') },
+    { id: 'abstrak',    label: _t('step.abstrak', '📄\nAbstrak') },
+    { id: 'bab1',       label: _t('step.bab1', '📖\nBAB I') },
+    { id: 'bab2',       label: _t('step.bab2', '📚\nBAB II') },
+    { id: 'bab3',       label: _t('step.bab3', '⚙️\nBAB III') },
+    { id: 'bab4',       label: _t('step.bab4', '📊\nBAB IV') },
+    { id: 'bab5',       label: _t('step.bab5', '🏁\nBAB V') },
+    { id: 'pustaka',    label: _t('step.pustaka', '📑\nDaftar\nPustaka') },
+  ];
+}
+
+let GENERATE_STEPS = getGenerateSteps();
 
 // ── Application State ────────────────────────
 const state = {
@@ -487,13 +497,15 @@ function renderOutputContent(markdown) {
   const continueBtn = document.getElementById('continue-chat-btn');
   if (saveMemBtn) saveMemBtn.style.display = '';
   if (continueBtn) continueBtn.style.display = '';
-  document.getElementById('output-title').textContent = '📄 Dokumen Tergenerate';
+  const isEn = window.getLanguage && getLanguage() === 'en';
+  document.getElementById('output-title').textContent = isEn ? '📄 Generated Document' : '📄 Dokumen Tergenerate';
 }
 
 async function generateFull() {
   const topic = document.getElementById('gen-topic').value.trim();
   if (!topic) {
-    toast('Topik penelitian wajib diisi!', 'warn');
+    const isEn = window.getLanguage && getLanguage() === 'en';
+    toast(isEn ? 'Research topic is required!' : 'Topik penelitian wajib diisi!', 'warn');
     document.getElementById('gen-topic').focus();
     return;
   }
@@ -507,9 +519,9 @@ async function generateFull() {
   // Disable button
   const btn = document.getElementById('gen-btn');
   btn.disabled = true;
-  btn.innerHTML = `<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating…`;
+  btn.innerHTML = `<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ${window.t ? t('gen.btn_generating') : 'Generating…'}`;
 
-  document.getElementById('gen-status-text').textContent = 'Memproses…';
+  document.getElementById('gen-status-text').textContent = window.t ? t('gen.status_processing') : 'Memproses…';
   buildProgressSteps(0, []);
   renderOutputSkeleton();
   document.getElementById('copy-btn').style.display = 'none';
@@ -541,7 +553,7 @@ async function generateFull() {
       },
     };
 
-    document.getElementById('gen-status-text').textContent = '🤖 AI sedang menulis… (estimasi 1-3 menit)';
+    document.getElementById('gen-status-text').textContent = window.t ? t('gen.status_writing') : '🤖 AI sedang menulis… (estimasi 1-3 menit)';
     const result = await callAcademAI(payload);
 
     clearInterval(stepInterval);
@@ -554,20 +566,27 @@ async function generateFull() {
 
     renderOutputContent(content);
 
+    const isEn = window.getLanguage && getLanguage() === 'en';
     const wordCount = result?.document?.wordCount || content.split(/\s+/).length;
-    document.getElementById('gen-status-text').textContent = `✅ Selesai · ${wordCount.toLocaleString('id-ID')} kata`;
-    toast('Artikel berhasil digenerate & otomatis tersimpan ke Memori!', 'success');
+    const wordFormatted = wordCount.toLocaleString(isEn ? 'en-US' : 'id-ID');
+    document.getElementById('gen-status-text').textContent = window.t
+      ? t('gen.status_done', { words: wordFormatted })
+      : `✅ Selesai · ${wordFormatted} kata`;
+    toast(window.t ? t('toast.memory_saved') : 'Artikel berhasil digenerate & otomatis tersimpan ke Memori!', 'success');
     fetchMemoryDocuments();
   } catch (err) {
     clearInterval(stepInterval);
     buildProgressSteps(-1, []);
-    const errMd = `## ❌ Generate Gagal\n\n**Error**: ${err.message}\n\n**Langkah perbaikan:**\n1. Pastikan server lokal berjalan: \`node server.js\`\n2. Cek kuota / API Key Gemini di \`.env\`\n3. Coba ulangi dengan topik yang lebih spesifik`;
+    const isEn = window.getLanguage && getLanguage() === 'en';
+    const errMd = isEn
+      ? `## ❌ Generation Failed\n\n**Error**: ${err.message}\n\n**Troubleshooting steps:**\n1. Ensure local server is running: \`node server.js\`\n2. Verify Gemini API Key quota in \`.env\`\n3. Try again with a more specific topic`
+      : `## ❌ Generate Gagal\n\n**Error**: ${err.message}\n\n**Langkah perbaikan:**\n1. Pastikan server lokal berjalan: \`node server.js\`\n2. Cek kuota / API Key Gemini di \`.env\`\n3. Coba ulangi dengan topik yang lebih spesifik`;
     renderOutputContent(errMd);
-    document.getElementById('gen-status-text').textContent = '❌ Generate gagal';
+    document.getElementById('gen-status-text').textContent = window.t ? t('gen.status_failed') : '❌ Generate gagal';
     toast(err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg> Generate Artikel`;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg> <span data-i18n="gen.btn_generate">${window.t ? t('gen.btn_generate') : 'Generate Artikel'}</span>`;
   }
 }
 
@@ -578,7 +597,7 @@ function resetGenerate() {
   document.getElementById('gen-output-body').innerHTML = `
     <div class="output-placeholder">
       <div class="output-placeholder-icon" aria-hidden="true">📄</div>
-      <p>Dokumen akan muncul di sini setelah generate selesai</p>
+      <p data-i18n="gen.output_placeholder">${window.t ? t('gen.output_placeholder') : 'Dokumen akan muncul di sini setelah generate selesai'}</p>
     </div>`;
   document.getElementById('copy-btn').style.display = 'none';
   document.getElementById('download-btn').style.display = 'none';
@@ -588,16 +607,16 @@ function resetGenerate() {
   const continueBtn = document.getElementById('continue-chat-btn');
   if (saveMemBtn) saveMemBtn.style.display = 'none';
   if (continueBtn) continueBtn.style.display = 'none';
-  document.getElementById('output-title').textContent = 'Output Dokumen';
+  document.getElementById('output-title').textContent = window.t ? t('gen.output_title') : 'Output Dokumen';
   generateOutputRaw = '';
-  toast('Form di-reset', 'info', 1800);
+  toast(window.t ? t('toast.reset_done') : 'Form di-reset', 'info', 1800);
 }
 
 function copyOutput() {
   if (!generateOutputRaw) return;
   navigator.clipboard.writeText(generateOutputRaw)
-    .then(() => toast('Konten disalin ke clipboard!', 'success'))
-    .catch(() => toast('Gagal menyalin', 'error'));
+    .then(() => toast(window.t ? t('toast.copied') : 'Konten disalin ke clipboard!', 'success'))
+    .catch(() => toast(window.t ? t('toast.copy_failed') : 'Gagal menyalin', 'error'));
 }
 
 function downloadOutput() {
@@ -798,24 +817,56 @@ function clearValidator() {
   toast('Input dihapus', 'info', 1500);
 }
 
-// ── Initialization ───────────────────────────
+// ── Initialization & Localization ─────────────
+function refreshLocalizedElements() {
+  MODES = getModes();
+  GENERATE_STEPS = getGenerateSteps();
+
+  const currentM = MODES.find(m => m.id === state.currentMode) || MODES[0];
+  const iconDisplay = document.getElementById('mode-icon-display');
+  const labelDisplay = document.getElementById('mode-label-display');
+  if (iconDisplay) iconDisplay.textContent = currentM.icon;
+  if (labelDisplay) labelDisplay.textContent = currentM.label;
+
+  buildModeDropdown();
+  updateMemoryUI();
+
+  // If output placeholder is showing, update text
+  const placeholderEl = document.querySelector('#gen-output-body .output-placeholder p');
+  if (placeholderEl && window.t) {
+    placeholderEl.textContent = t('gen.output_placeholder');
+  }
+
+  // Update connection status text if connected
+  if (state.isConnected) {
+    const text = document.getElementById('status-text');
+    if (text && window.t) text.textContent = t('header.online');
+  }
+}
+
+window.onLanguageSwitched = function(lang) {
+  refreshLocalizedElements();
+};
+
 function init() {
   initSession();
-  buildModeDropdown();
+
+  // Apply saved language preference
+  const savedLang = localStorage.getItem('academ_lang') || 'id';
+  if (window.switchLanguage) {
+    switchLanguage(savedLang);
+  }
+
+  refreshLocalizedElements();
   checkConnection();
   fetchMemoryDocuments();
   setInterval(checkConnection, CONFIG.PING_INTERVAL);
 
-  // Set default mode display
-  const defaultMode = MODES.find(m => m.id === state.currentMode);
-  if (defaultMode) {
-    document.getElementById('mode-icon-display').textContent = defaultMode.icon;
-    document.getElementById('mode-label-display').textContent = defaultMode.label;
-  }
-
   // Auto-resize chat textarea on load
   const chatInput = document.getElementById('chat-input');
-  chatInput.addEventListener('input', () => autoResizeTextarea(chatInput));
+  if (chatInput) {
+    chatInput.addEventListener('input', () => autoResizeTextarea(chatInput));
+  }
 }
 
 // ════════════════════════════════════════════════
@@ -847,7 +898,11 @@ function updateMemoryUI() {
     if (count > 0 && state.useMemory) {
       const latestDoc = state.memoryDocuments[0];
       const previewTitle = latestDoc.title.length > 40 ? latestDoc.title.slice(0, 37) + '...' : latestDoc.title;
-      bannerText.innerHTML = `Konteks Aktif: <strong>${count} Dokumen</strong> ("${escapeHtml(previewTitle)}")`;
+      const isEn = window.getLanguage && window.getLanguage() === 'en';
+      const label = isEn
+        ? `Active Context: <strong>${count} Document${count > 1 ? 's' : ''}</strong> ("${escapeHtml(previewTitle)}")`
+        : `Konteks Aktif: <strong>${count} Dokumen</strong> ("${escapeHtml(previewTitle)}")`;
+      bannerText.innerHTML = label;
       banner.classList.remove('hidden');
     } else {
       banner.classList.add('hidden');
@@ -888,19 +943,29 @@ function renderMemoryModalList() {
   const listEl = document.getElementById('memory-docs-list');
   if (!listEl) return;
 
+  const isEn = window.getLanguage && window.getLanguage() === 'en';
+
   if (state.memoryDocuments.length === 0) {
     listEl.innerHTML = `
       <div style="text-align:center;padding:32px 16px;color:var(--t-muted);background:rgba(255,255,255,0.02);border-radius:var(--radius-sm);border:1px dashed rgba(255,255,255,0.08);">
         <div style="font-size:2rem;margin-bottom:8px;">🧠</div>
-        <p style="font-size:0.9rem;font-weight:500;color:var(--t-secondary);">Belum ada dokumen dalam memori riset sesi ini.</p>
-        <p style="font-size:0.8rem;margin-top:4px;">Generate artikel pada tab "Generate Artikel" atau klik "Simpan ke Memori" pada respons chat untuk menjadikannya konteks lanjutan.</p>
+        <p style="font-size:0.9rem;font-weight:500;color:var(--t-secondary);">${window.t ? t('mem.empty_title') : 'Belum ada dokumen dalam memori riset sesi ini.'}</p>
+        <p style="font-size:0.8rem;margin-top:4px;">${window.t ? t('mem.empty_sub') : 'Generate artikel pada tab "Generate Artikel" atau klik "Simpan ke Memori" pada respons chat.'}</p>
       </div>`;
     return;
   }
 
   listEl.innerHTML = state.memoryDocuments.map((doc, idx) => {
-    const formattedDate = new Date(doc.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
-    const categoryLabels = {
+    const formattedDate = new Date(doc.timestamp).toLocaleString(isEn ? 'en-US' : 'id-ID', { dateStyle: 'short', timeStyle: 'short' });
+    const categoryLabels = isEn ? {
+      full_article: '📄 Full Article Draft',
+      draft: '✍️ Draft / Chapter',
+      bab1: '📖 Chapter I',
+      bab2: '📚 Chapter II',
+      bab3: '⚙️ Chapter III',
+      abstract: '📑 Abstract',
+      custom: '📝 Custom Document'
+    } : {
       full_article: '📄 Draf Artikel Lengkap',
       draft: '✍️ Draf / Bab',
       bab1: '📖 Bab I',
@@ -909,7 +974,7 @@ function renderMemoryModalList() {
       abstract: '📑 Abstrak',
       custom: '📝 Dokumen Manual'
     };
-    const catLabel = categoryLabels[doc.type] || '📄 Dokumen Riset';
+    const catLabel = categoryLabels[doc.type] || (isEn ? '📄 Research Document' : '📄 Dokumen Riset');
 
     return `
       <div class="memory-doc-card" id="mem-card-${doc.id}">
@@ -918,25 +983,25 @@ function renderMemoryModalList() {
           <span class="memory-doc-badge">${catLabel}</span>
         </div>
         <div class="memory-doc-meta">
-          <span>📊 ${doc.wordCount.toLocaleString('id-ID')} kata</span>
+          <span>📊 ${doc.wordCount.toLocaleString(isEn ? 'en-US' : 'id-ID')} ${isEn ? 'words' : 'kata'}</span>
           <span>🕒 ${formattedDate}</span>
-          <span style="color:var(--c-accent)">✓ Konteks Aktif</span>
+          <span style="color:var(--c-accent)">${isEn ? '✓ Active Context' : '✓ Konteks Aktif'}</span>
         </div>
         <div class="memory-doc-actions">
           <button class="btn btn-accent btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'bab2')">
-            ✍️ Lanjutkan Bab II / III
+            ${window.t ? t('mem.action_continue_bab') : '✍️ Lanjutkan Bab II / III'}
           </button>
           <button class="btn btn-secondary btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'abstract')">
-            📑 Buat Abstrak
+            ${window.t ? t('mem.action_create_abstract') : '📑 Buat Abstrak'}
           </button>
           <button class="btn btn-primary btn-xs" style="background:#1e40af;border-color:#3b82f6;" onclick="exportMemoryDocToDocx('${doc.id}')" title="Download naskah dalam format Word (.docx) standar 4-3-3-3 cm">
-            📥 Word (.docx)
+            ${window.t ? t('mem.action_word') : '📥 Word (.docx)'}
           </button>
           <button class="btn btn-ghost btn-xs" onclick="previewMemoryDoc('${doc.id}')">
-            👀 Pratinjau
+            ${window.t ? t('mem.action_preview') : '👀 Pratinjau'}
           </button>
           <button class="btn btn-ghost btn-xs" style="color:var(--c-danger);margin-left:auto;" onclick="deleteMemoryDoc('${doc.id}')">
-            🗑️ Hapus
+            ${window.t ? t('mem.action_delete') : '🗑️ Hapus'}
           </button>
         </div>
       </div>
@@ -1477,14 +1542,14 @@ function clearStatsForm() {
   document.getElementById('stats-narrative-card')?.classList.add('hidden');
   document.getElementById('stat-status-text').textContent = '';
   currentStatsResult = null;
-  toast('Form statistik dibersihkan', 'info', 1500);
+  toast(window.t ? t('toast.cleared') : 'Form statistik dibersihkan', 'info', 1500);
 }
 
 function copyStatsNarrative() {
   if (!currentStatsResult || !currentStatsResult.narrative) return;
   navigator.clipboard.writeText(currentStatsResult.narrative)
-    .then(() => toast('Teks pembahasan Bab IV disalin ke clipboard!', 'success', 2500))
-    .catch(() => toast('Gagal menyalin', 'error'));
+    .then(() => toast(window.t ? t('toast.stats_copied') : 'Teks pembahasan Bab IV disalin ke clipboard!', 'success', 2500))
+    .catch(() => toast(window.t ? t('toast.copy_failed') : 'Gagal menyalin', 'error'));
 }
 
 async function saveStatsToMemory() {
