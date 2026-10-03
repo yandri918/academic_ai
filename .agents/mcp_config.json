@@ -1,5 +1,26 @@
 {
   "mcpServers": {
+    "duckduckgo": {
+      "command": "uvx",
+      "args": [
+        "duckduckgo-mcp-server"
+      ],
+      "description": "DuckDuckGo Web Search & Content Fetcher MCP Server: Performs fast web searches and content retrieval without requiring an API key."
+    },
+    "pdf-parser": {
+      "command": "node",
+      "args": [
+        "./mcp/pdf_mcp_server.js"
+      ],
+      "description": "AcademAI PDF Parser MCP Server: Extracts and ingests academic research papers directly into local research memory."
+    },
+    "pdf-reader": {
+      "command": "uvx",
+      "args": [
+        "mcp-pdf-reader"
+      ],
+      "description": "PyMuPDF High-Speed PDF Reader & OCR MCP Server: Fast extraction of text, tables, and document structures."
+    },
     "academai-data-viz": {
       "command": "node",
       "args": [
