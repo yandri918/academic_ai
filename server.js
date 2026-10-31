@@ -53,8 +53,16 @@ const aiLimiter = rateLimit({
 });
 app.use(['/api/generate', '/webhook/academ-ai', '/api/plagiarism/check', '/api/paraphrase/academic'], aiLimiter);
 
-// Serve frontend static files
-app.use(express.static(path.join(__dirname, 'frontend')));
+// Serve frontend static files with no-cache headers so updates appear immediately
+app.use(express.static(path.join(__dirname, 'frontend'), {
+  etag: false,
+  lastModified: false,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+}));
 
 // ── Persistent Document Memory Storage ───────────
 const DATA_DIR = path.join(__dirname, 'data');
