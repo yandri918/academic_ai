@@ -91,6 +91,9 @@
     <button class="tab-btn" id="tab-plagiarism-btn" role="tab" aria-selected="false" aria-controls="tab-plagiarism" onclick="switchTab('plagiarism')">
       <span class="tab-icon" aria-hidden="true">🛡️</span><span data-i18n="nav.plagiarism">Cek Plagiat</span>
     </button>
+    <button class="tab-btn" id="tab-paraphrase-btn" role="tab" aria-selected="false" aria-controls="tab-paraphrase" onclick="switchTab('paraphrase')">
+      <span class="tab-icon" aria-hidden="true">🧬</span><span data-i18n="nav.paraphrase">Parafrase &amp; Anti-AI</span>
+    </button>
     <button class="tab-btn" id="tab-statistics-btn" role="tab" aria-selected="false" aria-controls="tab-statistics" onclick="switchTab('statistics')">
       <span class="tab-icon" aria-hidden="true">📊</span><span data-i18n="nav.statistics">Kalkulator Statistik</span>
     </button>
@@ -421,19 +424,61 @@
     </section>
 
     <!-- ════════════════════════════════════
-         TAB 4: CEK PLAGIAT & SIMILARITY
+         TAB 4: CEK PLAGIAT & SIMILARITY (STANDAR TURNITIN / ITHENTICATE)
          ════════════════════════════════════ -->
     <section id="tab-plagiarism" class="tab-content" role="tabpanel" aria-labelledby="tab-plagiarism-btn">
       <div class="plagiarism-layout">
-        <h1 class="section-title" data-i18n="plag.title">Cek Plagiarisme & Skor Kemiripan Turnitin</h1>
-        <p class="section-subtitle" data-i18n="plag.subtitle">Analisis tingkat kemiripan teks dengan indeks jurnal Google Scholar, deteksi kalimat rentan plagiat, dan parafrase instan otomatis (&lt; 15%).</p>
+        <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:12px;">
+          <div>
+            <h1 class="section-title" data-i18n="plag.title">Audit Plagiarisme Akademik (Standar Turnitin &amp; iThenticate)</h1>
+            <p class="section-subtitle" data-i18n="plag.subtitle" style="margin-bottom:8px;">
+              Uji keaslian naskah terhadap database <strong>Google Scholar (SINTA/Garuda)</strong> &amp; <strong>CrossRef DOI</strong> sesuai kaidah <strong>Permendikbudristek No. 39 Tahun 2021</strong>.
+            </p>
+          </div>
+          <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+            <span class="chip chip-primary">🔍 CrossRef DOI + Google Scholar</span>
+            <span class="chip chip-accent">⚖️ Permendikbudristek 39/2021</span>
+          </div>
+        </div>
 
-        <!-- Input Card -->
+        <!-- Input & Filter Standar Turnitin Card -->
         <div class="glass-card plagiarism-input-card">
+          <!-- Pengaturan Standar Kampus & Filter Turnitin -->
+          <div style="display:grid;grid-template-columns:1.2fr 1.8fr;gap:16px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--c-border);">
+            <div class="form-group">
+              <label class="form-label" for="plag-academic-standard">Standar Ambang Batas Kampus / Jurnal</label>
+              <select id="plag-academic-standard" class="form-select">
+                <option value="s1_skripsi">🎓 Skripsi S1 / Tugas Akhir (Batas Maks. &le; 20%)</option>
+                <option value="s2_sinta" selected>🏛️ Tesis S2 / Jurnal SINTA 3–6 (Batas Maks. &le; 15%)</option>
+                <option value="s3_scopus">🔬 Disertasi S3 / SINTA 1–2 &amp; Scopus iThenticate (&le; 10%)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Filter Pengecualian Standar Turnitin (Exclusion Filters)</label>
+              <div class="flex items-center gap-3" style="flex-wrap:wrap;padding-top:6px;">
+                <label class="flex items-center gap-2 text-sm" style="color:var(--t-secondary);cursor:pointer;" title="Abaikan kalimat kutipan langsung di dalam tanda petik yang disertai sitasi">
+                  <input type="checkbox" id="plag-exclude-quotes" checked style="accent-color:var(--c-primary);width:15px;height:15px;" />
+                  <span>Exclude Quotes (Kutipan <code>"..."</code>)</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm" style="color:var(--t-secondary);cursor:pointer;" title="Abaikan bagian Daftar Pustaka / References di akhir dokumen">
+                  <input type="checkbox" id="plag-exclude-bib" checked style="accent-color:var(--c-primary);width:15px;height:15px;" />
+                  <span>Exclude Bibliography (Daftar Pustaka)</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm" style="color:var(--t-secondary);cursor:pointer;" title="Abaikan kecocokan frasa pendek di bawah 8 kata">
+                  <input type="checkbox" id="plag-exclude-small" checked style="accent-color:var(--c-primary);width:15px;height:15px;" />
+                  <span>Exclude Small Matches (&lt; 8 Kata)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group" style="margin-bottom:16px;">
-            <div class="flex items-center justify-between mb-2">
-              <label class="form-label" for="plagiarism-input" data-i18n="plag.input_label" style="margin-bottom:0;">Teks yang Akan Diperiksa</label>
-              <div class="flex items-center gap-2">
+            <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:8px;">
+              <label class="form-label" for="plagiarism-input" data-i18n="plag.input_label" style="margin-bottom:0;">Naskah Akademik yang Akan Diaudit</label>
+              <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-xs" onclick="loadSamplePlagiarismText()" title="Muat contoh paragraf skripsi untuk uji coba">
+                  🎲 Contoh Naskah Uji
+                </button>
                 <button class="btn btn-ghost btn-xs" onclick="loadFromActiveMemoryForPlagiarism()" title="Ambil teks dari draf memori" data-i18n="plag.btn_load_mem">
                   🧠 Muat dari Memori
                 </button>
@@ -444,18 +489,21 @@
             </div>
             <textarea
               id="plagiarism-input" class="form-textarea"
-              placeholder="Paste paragraf, bab skripsi, atau draf artikel Anda di sini... (Maksimal 15.000 karakter)"
+              placeholder="Paste paragraf, bab skripsi, atau artikel jurnal Anda di sini... (Maksimal 15.000 karakter)"
               data-i18n-placeholder="plag.input_placeholder"
               style="min-height:170px;"
               aria-label="Teks untuk cek plagiat"
             ></textarea>
-            <div class="form-hint" data-i18n="plag.input_hint">Mendukung teks bahasa Indonesia & bahasa Inggris. Diuji silang dengan data Google Scholar dan analisis sintaksis Turnitin.</div>
+            <div class="form-hint" data-i18n="plag.input_hint">Mendeteksi 4 jenis kemiripan: <strong>Salinan Verbatim</strong>, <strong>Parafrase Dangkal (Patchwriting)</strong>, <strong>Klaim Tanpa Sitasi</strong>, dan <strong>Frasa Regulasi/Template</strong>.</div>
           </div>
           
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3" style="flex-wrap:wrap;">
             <button class="btn btn-primary" id="plagiarism-btn" onclick="checkPlagiarism()" aria-label="Mulai cek plagiat">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span data-i18n="plag.btn_check">Cek Kemiripan Sekarang</span>
+              <span data-i18n="plag.btn_check">Audit Originality Report Sekarang</span>
+            </button>
+            <button class="btn btn-accent" onclick="sendPlagiarismToAntiAiParaphraser()" title="Buka di Tools Parafrase Akademik &amp; Anti-AI Humanizer">
+              <span>🧬 Parafrase Akademik &amp; Turunkan AI (&lt; 10%)</span>
             </button>
             <button class="btn btn-ghost" onclick="clearPlagiarism()" aria-label="Hapus input">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
@@ -465,38 +513,267 @@
           </div>
         </div>
 
-        <!-- Plagiarism Score Meter & Summary -->
-        <div class="plagiarism-summary hidden" id="plagiarism-summary" role="region" aria-label="Hasil skor kemiripan">
+        <!-- Turnitin 5-Pillar Originality Score Meter -->
+        <div class="plagiarism-summary hidden" id="plagiarism-summary" role="region" aria-label="Hasil skor kemiripan" style="grid-template-columns:1.35fr repeat(4, 1fr);">
           <div class="similarity-score-box" id="similarity-score-box">
             <div class="similarity-percentage" id="stat-similarity">0%</div>
-            <div class="similarity-label" id="stat-similarity-label" data-i18n="plag.stat_similarity">Indeks Kemiripan</div>
-            <div class="similarity-badge" id="stat-similarity-badge">🟢 Aman (&lt; 15%)</div>
+            <div class="similarity-label" id="stat-similarity-label" data-i18n="plag.stat_similarity">SIMILARITY INDEX</div>
+            <div class="similarity-badge" id="stat-similarity-badge">🟢 Aman (&le; 15%)</div>
           </div>
-          <div class="summary-stat">
-            <div class="summary-stat-num" id="stat-total-sentences">0</div>
-            <div class="summary-stat-label" data-i18n="plag.stat_total_sentences">Total Kalimat</div>
+          <div class="summary-stat" title="Kemiripan dari jurnal ilmiah CrossRef, SINTA, &amp; Google Scholar">
+            <div class="summary-stat-num" id="stat-pub-sources" style="color:var(--c-primary-2);">0%</div>
+            <div class="summary-stat-label">📚 Publications (Jurnal)</div>
           </div>
-          <div class="summary-stat">
-            <div class="summary-stat-num" id="stat-flagged-sentences" style="color:var(--c-danger);">0</div>
-            <div class="summary-stat-label" data-i18n="plag.stat_flagged">⚠️ Perlu Parafrase</div>
+          <div class="summary-stat" title="Kemiripan dari repositori kampus &amp; sumber internet">
+            <div class="summary-stat-num" id="stat-internet-sources" style="color:var(--c-warn);">0%</div>
+            <div class="summary-stat-label">🌐 Internet Sources</div>
           </div>
-          <div class="summary-stat">
-            <div class="summary-stat-num" id="stat-unique-percentage" style="color:var(--c-success);">100%</div>
-            <div class="summary-stat-label" data-i18n="plag.stat_originality">✨ Orisinalitas</div>
+          <div class="summary-stat" title="Kemiripan dengan pola skripsi/tesis mahasiswa">
+            <div class="summary-stat-num" id="stat-student-papers" style="color:var(--c-accent);">0%</div>
+            <div class="summary-stat-label">🎓 Student Papers</div>
+          </div>
+          <div class="summary-stat" title="Estimasi probabilitas penulisan AI &amp; jumlah kalimat terdeteksi">
+            <div class="summary-stat-num" id="stat-ai-writing" style="color:var(--c-danger);">0%</div>
+            <div class="summary-stat-label">🤖 Indikasi AI (<span id="stat-flagged-sentences">0</span>/<span id="stat-total-sentences">0</span> klm)</div>
+            <span id="stat-unique-percentage" style="display:none;">100%</span>
           </div>
         </div>
 
-        <!-- Detailed Sentence Breakdown & Auto-Paraphrase Section -->
-        <div class="plagiarism-results-wrap hidden" id="plagiarism-results-wrap">
-          <div class="flex items-center justify-between mb-3">
-            <h3 style="font-size:1.05rem;font-weight:700;" data-i18n="plag.section_detection">Deteksi Kalimat & Rekomendasi Parafrase Turnitin</h3>
-            <button class="btn btn-accent btn-sm" onclick="applyFullAutoParaphrase()" id="btn-full-paraphrase">
-              <span data-i18n="plag.btn_auto_paraphrase">🔄 Terapkan Parafrase Otomatis (&lt; 15%)</span>
-            </button>
+        <!-- Detailed Originality Report Sections -->
+        <div class="plagiarism-results-wrap hidden" id="plagiarism-results-wrap" style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- 1. Peta Naskah Berwarna Interaktif (Turnitin Highlighted Manuscript View) -->
+          <div class="glass-card" style="padding:20px;">
+            <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:10px;">
+              <div>
+                <h3 style="font-size:1.05rem;font-weight:700;">🖍️ Peta Naskah Berwarna (Turnitin Originality Highlight View)</h3>
+                <p class="text-sm text-muted" style="margin-top:2px;">Kalimat yang disorot warna menunjukkan letak kemiripan dengan sumber literatur terindeks.</p>
+              </div>
+              <div class="flex items-center gap-2" style="flex-wrap:wrap;font-size:0.74rem;">
+                <span style="background:rgba(239,68,68,0.22);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;padding:2px 8px;border-radius:4px;">🔴 Verbatim (&gt;40%)</span>
+                <span style="background:rgba(245,158,11,0.22);border:1px solid rgba(245,158,11,0.5);color:#fcd34d;padding:2px 8px;border-radius:4px;">🟠 Patchwriting (15–40%)</span>
+                <span style="background:rgba(59,130,246,0.22);border:1px solid rgba(59,130,246,0.5);color:#93c5fd;padding:2px 8px;border-radius:4px;">🔵 Klaim Tanpa Sitasi</span>
+              </div>
+            </div>
+            <div id="plagiarism-highlighted-manuscript" style="background:rgba(255,255,255,0.025);border:1px solid var(--c-border);border-radius:var(--radius-sm);padding:18px;margin-top:10px;line-height:1.9;font-size:0.92rem;"></div>
           </div>
 
-          <div class="plagiarism-sentence-list" id="plagiarism-sentence-list">
-            <!-- Rendered by JS -->
+          <!-- 2. Daftar Sumber Literatur Terindeks (Top Matched Sources Breakdown) -->
+          <div class="glass-card" id="plagiarism-sources-card" style="padding:20px;">
+            <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:10px;">📚 Daftar Sumber Literatur Terdeteksi (CrossRef DOI &amp; Google Scholar)</h3>
+            <div id="plagiarism-matched-sources" style="display:flex;flex-direction:column;gap:8px;">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- 3. Ringkasan Eksekutif & Hasil Naskah Revisi Bebas Plagiat -->
+          <div class="glass-card" id="plagiarism-paraphrased-card" style="padding:20px;">
+            <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:10px;">
+              <div>
+                <h3 style="font-size:1.05rem;font-weight:700;color:var(--c-accent);">✨ Ringkasan Audit &amp; Naskah Hasil Revisi Bebas Plagiat (&lt; 10%)</h3>
+                <p class="text-sm text-muted" id="plagiarism-audit-summary" style="margin-top:4px;line-height:1.5;"></p>
+              </div>
+              <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-xs" onclick="copyFullParaphrasedText()" title="Salin seluruh hasil parafrase">
+                  📋 Salin Naskah Revisi
+                </button>
+                <button class="btn btn-secondary btn-xs" onclick="saveParaphrasedToMemory()" title="Simpan ke Memori Riset">
+                  🧠 Simpan ke Memori
+                </button>
+                <button class="btn btn-secondary btn-xs" onclick="downloadPlagiarismReportDocx()" title="Download Naskah Revisi dalam format Word (.docx)">
+                  📥 Word (.docx)
+                </button>
+                <button class="btn btn-accent btn-xs" onclick="applyFullAutoParaphrase()" id="btn-full-paraphrase">
+                  <span data-i18n="plag.btn_auto_paraphrase">🔄 Ganti ke Kotak Input &amp; Uji Ulang</span>
+                </button>
+              </div>
+            </div>
+            <div class="md-body" id="plagiarism-paraphrased-output" style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.22);border-radius:var(--radius-sm);padding:16px;margin-top:12px;line-height:1.75;font-size:0.9rem;white-space:pre-wrap;"></div>
+          </div>
+
+          <!-- 4. Rincian Audit Per Kalimat & Rekomendasi Parafrase -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 style="font-size:1.05rem;font-weight:700;" data-i18n="plag.section_detection">🔬 Rincian Kalimat Terdeteksi &amp; Rekomendasi Parafrase Akademik</h3>
+            </div>
+            <div class="plagiarism-sentence-list" id="plagiarism-sentence-list">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB 5: PARAFRASE AKADEMIK & ANTI-AI HUMANIZER
+         ════════════════════════════════════ -->
+    <section id="tab-paraphrase" class="tab-content" role="tabpanel" aria-labelledby="tab-paraphrase-btn">
+      <div class="plagiarism-layout">
+        <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:12px;">
+          <div>
+            <h1 class="section-title" data-i18n="para.title">Parafrase Akademik Terpercaya &amp; Anti-AI Humanizer</h1>
+            <p class="section-subtitle" data-i18n="para.subtitle" style="margin-bottom:8px;">
+              Turunkan skor deteksi AI (Turnitin AI / GPTZero &lt; 10%) &amp; Similarity menggunakan standar <strong>Manchester Academic Phrasebank</strong>, <strong>Purdue OWL 4R</strong>, dan modulasi <strong>Burstiness &amp; Perplexity</strong>.
+            </p>
+          </div>
+          <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+            <span class="chip chip-accent">🏛️ Manchester Phrasebank</span>
+            <span class="chip chip-primary">📐 Purdue OWL 4R</span>
+            <span class="chip chip-success">🧬 High Burstiness (&lt;10% AI)</span>
+          </div>
+        </div>
+
+        <!-- Konfigurasi & Input Card -->
+        <div class="glass-card plagiarism-input-card">
+          <div class="form-grid form-grid-3" style="margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="para-framework">Tools / Kerangka Akademik</label>
+              <select id="para-framework" class="form-select">
+                <option value="anti_ai_humanizer" selected>🧬 Anti-AI Humanizer (Burstiness &amp; Perplexity)</option>
+                <option value="manchester_phrasebank">🏛️ Manchester Academic Phrasebank + PUEBI</option>
+                <option value="purdue_owl_4r">📐 Purdue OWL 4R (Nominalisasi &amp; Inversi)</option>
+                <option value="sinta_scopus_formal">📚 Standar Jurnal SINTA 1/2 &amp; Scopus Q1</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="para-discipline">Bidang Ilmu (Terminologi)</label>
+              <select id="para-discipline" class="form-select">
+                <option value="general_academic" selected>📚 Umum / Lintas Disiplin</option>
+                <option value="education">🎓 Ilmu Pendidikan</option>
+                <option value="paud">🧸 PAUD &amp; Pendidikan Anak</option>
+                <option value="economics">💰 Ekonomi &amp; Bisnis</option>
+                <option value="law">⚖️ Hukum</option>
+                <option value="psychology">🧠 Psikologi</option>
+                <option value="engineering">⚙️ Teknik &amp; Teknologi</option>
+                <option value="health">🏥 Kesehatan &amp; Kedokteran</option>
+                <option value="computer_science">💻 Ilmu Komputer</option>
+                <option value="social">👥 Ilmu Sosial</option>
+                <option value="agriculture">🌾 Pertanian</option>
+                <option value="communication">📡 Komunikasi</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="para-intensity">Intensitas Anti-AI</label>
+              <select id="para-intensity" class="form-select">
+                <option value="deep" selected>🔥 Deep Anti-AI (Target AI &lt; 8%)</option>
+                <option value="balanced">⚖️ Natural Academic (Seimbang)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:14px;">
+            <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:8px;">
+              <label class="form-label" for="para-input" style="margin-bottom:0;">Teks Akademik yang Akan Diparafrase &amp; Di-Humanize</label>
+              <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-xs" onclick="loadSampleAiTextForParaphrase()" title="Contoh teks buatan AI untuk diuji">
+                  🎲 Contoh Teks AI
+                </button>
+                <button class="btn btn-ghost btn-xs" onclick="loadFromMemoryForParaphrase()" title="Ambil dari Memori Riset">
+                  🧠 Muat dari Memori
+                </button>
+                <button class="btn btn-ghost btn-xs" onclick="triggerParaphrasePdfUpload()" title="Upload file PDF">
+                  📄 Upload PDF
+                </button>
+              </div>
+            </div>
+            <textarea
+              id="para-input"
+              class="form-textarea"
+              style="min-height:170px;"
+              placeholder="Tempelkan paragraf hasil AI (ChatGPT/Claude/Gemini) atau kutipan jurnal yang ingin diturunkan skor AI Generation &amp; Turnitin-nya..."
+            ></textarea>
+            <div class="flex items-center justify-between mt-2" style="flex-wrap:wrap;gap:8px;">
+              <label class="flex items-center gap-2 text-sm" style="color:var(--t-secondary);cursor:pointer;">
+                <input type="checkbox" id="para-preserve-citations" checked style="accent-color:var(--c-accent);width:15px;height:15px;" />
+                <span>🔒 Kunci &amp; Pertahankan 100% Sitasi <code>(Nama, Tahun)</code>, DOI, dan Angka Statistik</span>
+              </label>
+              <span class="form-hint">Didukung pencocokan diksi korpus Google Scholar &amp; analisis Burstiness</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3" style="flex-wrap:wrap;">
+            <button class="btn btn-primary" id="para-submit-btn" onclick="runAcademicParaphrase()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+              <span>🧬 Humanize &amp; Parafrase Akademik Sekarang</span>
+            </button>
+            <button class="btn btn-ghost" onclick="clearAcademicParaphrase()">
+              <span>Hapus</span>
+            </button>
+            <div class="ml-auto text-sm text-muted" id="para-status-text"></div>
+          </div>
+        </div>
+
+        <!-- Hasil Metrik AI Detection & Burstiness -->
+        <div class="plagiarism-summary hidden" id="para-metrics-summary" style="grid-template-columns:repeat(4,1fr);">
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="para-ai-before" style="color:var(--c-danger);">0%</div>
+            <div class="summary-stat-label">🤖 Indikasi AI Awal</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="para-ai-after" style="color:var(--c-success);">0%</div>
+            <div class="summary-stat-label">✨ Skor AI Sesudah (&lt;10% Aman)</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="para-burstiness" style="color:var(--c-accent);">0%</div>
+            <div class="summary-stat-label">📈 Burstiness (Variasi Kalimat)</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-num" id="para-human-score" style="color:var(--c-primary-2);">0%</div>
+            <div class="summary-stat-label">👤 Skor Tulisan Manusia</div>
+          </div>
+        </div>
+
+        <!-- Output Card dengan 3 Pilihan Variasi Akademik -->
+        <div class="hidden" id="para-results-wrap" style="display:flex;flex-direction:column;gap:20px;">
+          <div class="glass-card" style="padding:22px;">
+            <div class="flex items-center justify-between mb-3" style="flex-wrap:wrap;gap:10px;">
+              <div>
+                <h3 style="font-size:1.08rem;font-weight:700;color:var(--c-accent);">✨ Hasil Parafrase Akademik &amp; Humanisasi Anti-AI</h3>
+                <p class="text-sm text-muted" id="para-analysis-summary" style="margin-top:4px;line-height:1.5;"></p>
+              </div>
+              <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-xs" onclick="copyActiveParaphraseVariant()">
+                  📋 Salin Teks
+                </button>
+                <button class="btn btn-secondary btn-xs" onclick="saveActiveParaphraseToMemory()">
+                  🧠 Simpan ke Memori
+                </button>
+                <button class="btn btn-secondary btn-xs" onclick="downloadActiveParaphraseDocx()">
+                  📥 Word (.docx)
+                </button>
+                <button class="btn btn-accent btn-xs" onclick="testParaphraseInPlagiarismChecker()">
+                  🛡️ Uji di Cek Plagiat
+                </button>
+              </div>
+            </div>
+
+            <!-- Watermark AI yang Dihapus -->
+            <div id="para-watermarks-box" class="hidden" style="margin-bottom:14px;padding:10px 14px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--t-secondary);">
+            </div>
+
+            <!-- Pilihan 3 Tab Variasi -->
+            <div class="flex items-center gap-2 mb-3" style="flex-wrap:wrap;border-bottom:1px solid var(--c-border);padding-bottom:10px;">
+              <button class="btn btn-primary btn-xs" id="para-var-btn-humanized" onclick="selectParaphraseVariant('humanized')">
+                🧬 Versi 1: Anti-AI Humanizer (Utama)
+              </button>
+              <button class="btn btn-secondary btn-xs" id="para-var-btn-phrasebank" onclick="selectParaphraseVariant('phrasebank')">
+                🏛️ Versi 2: Manchester Phrasebank
+              </button>
+              <button class="btn btn-secondary btn-xs" id="para-var-btn-compact" onclick="selectParaphraseVariant('compact')">
+                📐 Versi 3: Purdue OWL Nominalisasi Padat
+              </button>
+            </div>
+
+            <div class="md-body" id="para-variant-output" style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.22);border-radius:var(--radius-sm);padding:18px;line-height:1.8;font-size:0.92rem;white-space:pre-wrap;"></div>
+          </div>
+
+          <!-- Log Transformasi Sintaksis & Teknik Akademik -->
+          <div class="glass-card" style="padding:22px;">
+            <h3 style="font-size:1.02rem;font-weight:700;margin-bottom:12px;">🔬 Rincian Transformasi Sintaksis &amp; Teknik Akademik</h3>
+            <div class="plagiarism-sentence-list" id="para-transformation-list">
+              <!-- Rendered by JS -->
+            </div>
           </div>
         </div>
 

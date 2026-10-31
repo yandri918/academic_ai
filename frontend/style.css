@@ -970,9 +970,16 @@ img { max-width: 100%; display: block; }
 
 /* ── Plagiarism Checker Styles ─────────────── */
 .plagiarism-layout {
+  padding: 32px 24px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+.plagiarism-input-card {
+  padding: 24px;
 }
 .plagiarism-summary {
   display: grid;

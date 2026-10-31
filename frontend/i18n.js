@@ -19,7 +19,10 @@ const TRANSLATIONS = {
     'nav.generate': 'Generate Artikel',
     'nav.validator': 'Validator Sitasi',
     'nav.plagiarism': 'Cek Plagiat',
+    'nav.paraphrase': 'Parafrase & Anti-AI',
     'nav.statistics': 'Kalkulator Statistik',
+    'para.title': 'Parafrase Akademik Terpercaya & Anti-AI Humanizer',
+    'para.subtitle': 'Turunkan skor deteksi AI (Turnitin AI / GPTZero < 10%) & Similarity menggunakan standar Manchester Academic Phrasebank, Purdue OWL 4R, dan modulasi Burstiness & Perplexity.',
 
     // Chat Tab - Controls
     'chat.mode.drafting.label': 'Drafting',
@@ -205,7 +208,10 @@ const TRANSLATIONS = {
     'nav.generate': 'Generate Article',
     'nav.validator': 'Citation Validator',
     'nav.plagiarism': 'Plagiarism Check',
+    'nav.paraphrase': 'Paraphrase & Anti-AI',
     'nav.statistics': 'Statistics Calculator',
+    'para.title': 'Trusted Academic Paraphraser & Anti-AI Humanizer',
+    'para.subtitle': 'Reduce AI detection scores (Turnitin AI / GPTZero < 10%) & Similarity using Manchester Academic Phrasebank, Purdue OWL 4R, and Burstiness & Perplexity modulation.',
 
     // Chat Tab - Controls
     'chat.mode.drafting.label': 'Drafting',
