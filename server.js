@@ -195,19 +195,30 @@ function cleanAcademicPdfPageText(rawPageText = '') {
     .replace(/\uFB02/g, 'fl')
     .replace(/\uFB03/g, 'ffi')
     .replace(/\uFB04/g, 'ffl')
+    .replace(/\uFFFD/g, '-')
     .replace(/\u00A0/g, ' ');
 
-  // Remove standalone page number markers at top/bottom of page
+  // Remove standalone page number markers, student assignment metadata headers, and table column indicator labels
   const lines = text.split('\n').filter((line, idx, arr) => {
     const t = line.trim();
     if (!t) return true;
     if (/^--\s*\d+\s+of\s+\d+\s*--$/i.test(t)) return false;
     if ((idx === 0 || idx === arr.length - 1) && /^\d{1,4}$/.test(t)) return false;
     if ((idx === 0 || idx === arr.length - 1) && /^halaman\s+\d+$/i.test(t)) return false;
+    // Strip student assignment header metadata (NAMA, NPM, KELAS, MK, MATA KULIAH, DOSEN, TUGAS UTS/UAS)
+    if (/^(NAMA|NPM|NIM|KELAS|MK|MATA\s+KULIAH|DOSEN(?:\s+PENGAMPU)?)\s*:/i.test(t)) return false;
+    if (/^TUGAS\s+(UTS|UAS|AKHIR|MANDIRI|KELOMPOK)$/i.test(t)) return false;
+    if (/^Paragrap\s+Indikator\s+Latar\s+Belakang/i.test(t)) return false;
     return true;
   });
 
   text = lines.join('\n');
+
+  // Remove inline table cell labels common in Indonesian university assignment templates (e.g., "Paragrap 1 Indikator 1: Kondisi Ideal (Dasar Pemikiran/Kondisi Harapan)")
+  text = text
+    .replace(/\bParagra[pf]\s*\d+\s*/gi, '\n\n')
+    .replace(/\bIndikator\s*\d+\s*:\s*(?:Kondisi\s+Ideal\s*\([^)]*\)|Penguatan\s+Kondisi\s+Ideal|Kondisi\s+Nyata\s*\([^)]*\)|Analisis\s+Dampak\s+Masalah|Solusi\s+yang\s+Ditawarkan\s*&\s*Novelty\s*\([^)]*\)|Keunggulan\s+Solusi\s+dan\s+Keterbaruan\s+Penelitian|Penguatan\s+Alasan\s+Pemilihan\s+Solusi|Uraian\s+Singkat\s+Judul\s*&\s*Tujuan\s+Penelitian)/gi, '')
+    .replace(/\b(?:NAMA|NPM|NIM|KELAS|MK|MATA\s+KULIAH|DOSEN(?:\s+PENGAMPU)?)\s*:\s*[^\n]+/gi, '');
 
   // Re-join hyphenated words split across PDF lines (e.g. "pembela-\njaran" -> "pembelajaran")
   text = text.replace(/([a-zA-Z]{2,})-\n\s*([a-z]{2,})/g, '$1$2');
@@ -1323,8 +1334,8 @@ async function handlePlagiarismCheck(req, res) {
 
     console.log(`[AcademAI Plagiarism Audit] Memeriksa naskah (${rawInputText.length} karakter) dengan standar="${stdConfig.name}"...`);
 
-    // Step 1: Terapkan Filter Pengecualian Standar Turnitin (Exclude Bibliography & Quotes)
-    let workingText = rawInputText;
+    // Step 1: Bersihkan header tabel tugas kuliah & Terapkan Filter Pengecualian Standar Turnitin (Exclude Bibliography & Quotes)
+    let workingText = cleanAcademicPdfPageText(rawInputText);
     let bibliographyExcluded = false;
     let quotesExcludedCount = 0;
 
@@ -1343,22 +1354,32 @@ async function handlePlagiarismCheck(req, res) {
       });
     }
 
-    // Step 2: Split menjadi kalimat-kalimat akademik
+    // Step 2: Split menjadi kalimat-kalimat akademik dari seluruh paragraf
     const minWordsPerSentence = excludeSmallMatches ? 7 : 3;
     const rawSentences = workingText
-      .split(/(?<=[.?!])\s+|\n+/)
-      .map(s => s.trim())
+      .split(/(?<=[.?!])\s+|\n{2,}/)
+      .map(s => s.replace(/\s+/g, ' ').trim())
       .filter(s => {
         if (s.includes('[KUTIPAN_LANGSUNG_DIKECUALIKAN]')) return false;
+        if (/^Judul\s*:/i.test(s)) return false;
         const wc = s.split(/\s+/).filter(Boolean).length;
-        return s.length > 15 && wc >= minWordsPerSentence;
+        return s.length > 20 && wc >= minWordsPerSentence;
       });
 
     const totalSentences = rawSentences.length || 1;
-    const aiAudit = analyzeAiSignature(rawInputText);
+    const aiAudit = analyzeAiSignature(workingText);
 
-    // Step 3: Pencocokan Multi-Indeks (Google Scholar + CrossRef REST API)
-    const sampleSentences = rawSentences.slice(0, 5);
+    // Step 3: Pencocokan Multi-Indeks (Google Scholar + CrossRef REST API) secara merata di awal, tengah, dan akhir naskah
+    const sampleIndices = new Set([
+      0,
+      Math.min(1, rawSentences.length - 1),
+      Math.floor(rawSentences.length * 0.35),
+      Math.floor(rawSentences.length * 0.65),
+      Math.max(0, rawSentences.length - 1)
+    ]);
+    const sampleSentences = Array.from(sampleIndices)
+      .filter(idx => idx >= 0 && idx < rawSentences.length)
+      .map(idx => rawSentences[idx]);
     const matchedSourcesMap = new Map();
     const sentenceSourceHints = [];
 

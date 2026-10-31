@@ -1373,8 +1373,11 @@ async function uploadAndParsePdfFile(file) {
       return;
     }
 
-    // Default: buka tab Cek Plagiat dan langsung periksa teks asli dari file PDF
+    // Default: buka tab Cek Plagiat, bersihkan hasil lama, dan langsung periksa teks asli dari file PDF baru
     switchTab('plagiarism');
+    document.getElementById('plagiarism-summary')?.classList.add('hidden');
+    document.getElementById('plagiarism-results-wrap')?.classList.add('hidden');
+    currentPlagiarismResult = null;
     const autoCheck = document.getElementById('plag-pdf-autocheck')?.checked !== false;
     applyPlagiarismPdfSelection(autoCheck);
   } catch (err) {
