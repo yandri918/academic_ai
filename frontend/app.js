@@ -989,17 +989,20 @@ function renderMemoryModalList() {
           <span style="color:var(--c-accent)">${isEn ? '✓ Active Context' : '✓ Konteks Aktif'}</span>
         </div>
         <div class="memory-doc-actions">
-          <button class="btn btn-accent btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'bab2')">
-            ${window.t ? t('mem.action_continue_bab') : '✍️ Lanjutkan Bab II / III'}
+          <button class="btn btn-primary btn-xs" onclick="useDocForPlagiarismCheck('${doc.id}')" title="Audit plagiarisme langsung dari teks asli dokumen ini">
+            🔍 Cek Plagiat File Asli
           </button>
-          <button class="btn btn-secondary btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'abstract')">
-            ${window.t ? t('mem.action_create_abstract') : '📑 Buat Abstrak'}
+          <button class="btn btn-accent btn-xs" onclick="useDocForParaphrase('${doc.id}')" title="Parafrase akademik &amp; turunkan skor AI dokumen ini">
+            🧬 Parafrase &amp; Anti-AI
           </button>
-          <button class="btn btn-primary btn-xs" style="background:#1e40af;border-color:#3b82f6;" onclick="exportMemoryDocToDocx('${doc.id}')" title="Download naskah dalam format Word (.docx) standar 4-3-3-3 cm">
+          <button class="btn btn-secondary btn-xs" style="background:#1e40af;border-color:#3b82f6;color:#fff;" onclick="exportMemoryDocToDocx('${doc.id}')" title="Download naskah dalam format Word (.docx) standar 4-3-3-3 cm">
             ${window.t ? t('mem.action_word') : '📥 Word (.docx)'}
           </button>
           <button class="btn btn-ghost btn-xs" onclick="previewMemoryDoc('${doc.id}')">
             ${window.t ? t('mem.action_preview') : '👀 Pratinjau'}
+          </button>
+          <button class="btn btn-ghost btn-xs" onclick="useDocAsChatContinuation('${doc.id}', 'bab2')" title="Gunakan sebagai konteks di Chat">
+            💬 Diskusi Chat
           </button>
           <button class="btn btn-ghost btn-xs" style="color:var(--c-danger);margin-left:auto;" onclick="deleteMemoryDoc('${doc.id}')">
             ${window.t ? t('mem.action_delete') : '🗑️ Hapus'}
@@ -1221,12 +1224,48 @@ async function exportMemoryDocToDocx(docId) {
   }
 }
 
-// ── PDF Upload & Ingestion Handlers ──────────────
+// ── PDF Upload, Structured Page/Section Parser & Direct Audit Handlers ──
 
-let pdfUploadTarget = 'chat';
+let pdfUploadTarget = 'plagiarism';
+let lastParsedPdfData = null;
 
-function triggerPdfUpload(target = 'chat') {
-  pdfUploadTarget = target;
+function useDocForPlagiarismCheck(docId) {
+  const doc = state.memoryDocuments.find(d => d.id === docId);
+  if (!doc) return;
+  closeMemoryModal();
+  switchTab('plagiarism');
+  const plagInput = document.getElementById('plagiarism-input');
+  if (plagInput) {
+    plagInput.value = doc.content.slice(0, 15000);
+  }
+  toast(`📄 Memuat teks asli "${doc.title}" (${doc.wordCount.toLocaleString('id-ID')} kata) — menjalankan Audit Plagiarisme…`, 'info', 3000);
+  setTimeout(() => checkPlagiarism(), 250);
+}
+
+function useDocForParaphrase(docId) {
+  const doc = state.memoryDocuments.find(d => d.id === docId);
+  if (!doc) return;
+  closeMemoryModal();
+  switchTab('paraphrase');
+  const paraInput = document.getElementById('para-input');
+  if (paraInput) {
+    paraInput.value = doc.content.slice(0, 15000);
+    paraInput.focus();
+  }
+  toast(`📄 Memuat teks asli "${doc.title}" ke Parafrase Akademik & Anti-AI!`, 'success', 2800);
+}
+
+function triggerPdfUpload(target = 'auto') {
+  if (target === 'auto') {
+    if (state.activeTab === 'paraphrase') {
+      pdfUploadTarget = 'paraphrase';
+    } else {
+      // Default semua unggahan PDF langsung ke Cek Plagiat File Asli (bukan generate ke Chat)
+      pdfUploadTarget = 'plagiarism';
+    }
+  } else {
+    pdfUploadTarget = target;
+  }
   const fileInput = document.getElementById('pdf-file-input');
   if (fileInput) {
     fileInput.value = '';
@@ -1234,22 +1273,58 @@ function triggerPdfUpload(target = 'chat') {
   }
 }
 
+function handlePdfDragOver(event, zoneId) {
+  event.preventDefault();
+  event.stopPropagation();
+  const zone = document.getElementById(zoneId);
+  if (zone) {
+    zone.style.borderColor = 'var(--c-accent)';
+    zone.style.background = 'rgba(6, 182, 212, 0.14)';
+  }
+}
+
+function handlePdfDragLeave(event, zoneId) {
+  event.preventDefault();
+  event.stopPropagation();
+  const zone = document.getElementById(zoneId);
+  if (zone) {
+    zone.style.borderColor = '';
+    zone.style.background = '';
+  }
+}
+
+function handlePdfDrop(event, target = 'plagiarism') {
+  event.preventDefault();
+  event.stopPropagation();
+  handlePdfDragLeave(event, target === 'paraphrase' ? 'para-pdf-dropzone' : 'plag-pdf-dropzone');
+  const file = event.dataTransfer?.files?.[0];
+  if (!file) return;
+  pdfUploadTarget = target;
+  uploadAndParsePdfFile(file);
+}
+
 async function handlePdfUpload(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
+  await uploadAndParsePdfFile(file);
+}
 
+async function uploadAndParsePdfFile(file) {
   if (!file.name.toLowerCase().endsWith('.pdf')) {
     toast('Hanya file berekstensi .pdf yang diperbolehkan!', 'warn');
     return;
   }
 
-  // Max 35MB
   if (file.size > 35 * 1024 * 1024) {
     toast('Ukuran file PDF melebihi batas maksimal 35MB', 'error');
     return;
   }
 
-  toast(`⏳ Mengunggah & mengekstrak teks dari "${file.name}"...`, 'info', 4000);
+  const parseStatusEl = document.getElementById('plag-pdf-parse-status');
+  if (parseStatusEl) {
+    parseStatusEl.textContent = `⏳ Mengekstrak teks asli dari "${file.name}"...`;
+  }
+  toast(`⏳ Mengekstrak teks asli per halaman dari file PDF "${file.name}"...`, 'info', 4000);
 
   const formData = new FormData();
   formData.append('pdf', file);
@@ -1268,49 +1343,229 @@ async function handlePdfUpload(event) {
     }
 
     const { document: doc, meta } = result;
-    toast(`✅ Berhasil ekstrak: ${meta.fileName} (${meta.pageCount} hal, ${meta.wordCount.toLocaleString('id-ID')} kata) tersimpan ke Memori!`, 'success', 4000);
+    lastParsedPdfData = { doc, meta };
+
+    if (parseStatusEl) {
+      parseStatusEl.textContent = `✅ Diekstrak: ${meta.fileName} (${meta.pageCount} halaman, ${meta.wordCount.toLocaleString('id-ID')} kata)`;
+    }
+
+    toast(`✅ File PDF asli "${meta.fileName}" berhasil diekstrak (${meta.pageCount} hal, ${meta.wordCount.toLocaleString('id-ID')} kata)!`, 'success', 4000);
 
     // Refresh memory list & badge
     await fetchMemoryDocuments();
 
-    // Close modal if open
-    closeMemoryModal();
+    // Update both PDF inspectors so the parsed PDF is ready in Plagiarism & Paraphrase tabs
+    populatePlagiarismPdfInspector(doc, meta);
+    populateParaphrasePdfInspector(doc, meta);
 
-    if (pdfUploadTarget === 'plagiarism') {
-      switchTab('plagiarism');
-      const plagInput = document.getElementById('plagiarism-input');
-      if (plagInput && doc?.content) {
-        plagInput.value = doc.content.slice(0, 15000);
-        plagInput.focus();
-      }
-      pdfUploadTarget = 'chat';
+    if (pdfUploadTarget === 'memory') {
+      // Tetap di modal memori agar user bisa klik "Cek Plagiat File Asli" atau "Parafrase"
+      renderMemoryModalList();
       return;
     }
+
+    closeMemoryModal();
 
     if (pdfUploadTarget === 'paraphrase') {
       switchTab('paraphrase');
-      const paraInput = document.getElementById('para-input');
-      if (paraInput && doc?.content) {
-        paraInput.value = doc.content.slice(0, 15000);
-        paraInput.focus();
-      }
-      pdfUploadTarget = 'chat';
+      applyParaphrasePdfSelection();
+      pdfUploadTarget = 'plagiarism';
       return;
     }
 
-    switchTab('chat');
-
-    // Pre-fill chat with synthesis prompt
-    const chatInput = document.getElementById('chat-input');
-    if (chatInput) {
-      chatInput.value = `Berdasarkan dokumen PDF "${doc.title}" yang baru saja saya unggah ke memori riset, tolong rangkumkan:\n1. Masalah utama dan fokus penelitian\n2. Teori dan metodologi yang digunakan\n3. Hasil temuan kunci yang relevan untuk skripsi saya`;
-      autoResizeTextarea(chatInput);
-      chatInput.focus();
-    }
+    // Default: buka tab Cek Plagiat dan langsung periksa teks asli dari file PDF
+    switchTab('plagiarism');
+    const autoCheck = document.getElementById('plag-pdf-autocheck')?.checked !== false;
+    applyPlagiarismPdfSelection(autoCheck);
   } catch (err) {
     console.error('[PDF Upload Error]:', err);
+    if (parseStatusEl) {
+      parseStatusEl.textContent = `❌ Gagal mengekstrak PDF: ${err.message}`;
+    }
     toast(`❌ Gagal memproses PDF: ${err.message}`, 'error', 4500);
   }
+}
+
+function populatePlagiarismPdfInspector(doc, meta) {
+  const inspector = document.getElementById('plag-pdf-inspector');
+  const fileNameEl = document.getElementById('plag-pdf-filename');
+  const metaBadgeEl = document.getElementById('plag-pdf-meta-badge');
+  const pageStartEl = document.getElementById('plag-pdf-page-start');
+  const pageEndEl = document.getElementById('plag-pdf-page-end');
+  const sectionSelectEl = document.getElementById('plag-pdf-section-select');
+
+  if (!inspector) return;
+  inspector.classList.remove('hidden');
+
+  if (fileNameEl) fileNameEl.textContent = meta.fileName || doc.title || 'dokumen.pdf';
+  if (metaBadgeEl) {
+    const secCount = Array.isArray(meta.detectedSections) ? meta.detectedSections.length : 0;
+    metaBadgeEl.textContent = `(${meta.pageCount || 1} Halaman · ${(meta.wordCount || 0).toLocaleString('id-ID')} Kata Total · ${(meta.bodyWordCount || meta.wordCount || 0).toLocaleString('id-ID')} Kata Tanpa Dafpus${secCount > 0 ? ` · ${secCount} Bab Terdeteksi` : ''})`;
+  }
+
+  const totalPages = meta.pageCount || (Array.isArray(meta.pages) ? meta.pages.length : 1) || 1;
+  if (pageStartEl) {
+    pageStartEl.max = totalPages;
+    pageStartEl.value = 1;
+  }
+  if (pageEndEl) {
+    pageEndEl.max = totalPages;
+    pageEndEl.value = totalPages;
+  }
+
+  if (sectionSelectEl) {
+    const sections = Array.isArray(meta.detectedSections) ? meta.detectedSections : [];
+    const pages = Array.isArray(meta.pages) ? meta.pages : [];
+    let optionsHtml = '';
+
+    if (sections.length > 0) {
+      optionsHtml += `<optgroup label="📑 Bab / Bagian Terdeteksi dari PDF Asli">`;
+      sections.forEach((s, idx) => {
+        optionsHtml += `<option value="sec:${idx}">${escapeHtml(s.title)} (${s.wordCount.toLocaleString('id-ID')} kata)</option>`;
+      });
+      optionsHtml += `</optgroup>`;
+    }
+
+    if (pages.length > 0) {
+      optionsHtml += `<optgroup label="📄 Per Halaman PDF Asli">`;
+      pages.forEach(p => {
+        optionsHtml += `<option value="page:${p.pageNumber}">Halaman ${p.pageNumber} (${p.wordCount.toLocaleString('id-ID')} kata)</option>`;
+      });
+      optionsHtml += `</optgroup>`;
+    }
+
+    sectionSelectEl.innerHTML = optionsHtml || `<option value="all">Seluruh Teks PDF</option>`;
+  }
+
+  onPlagiarismPdfModeChange();
+}
+
+function onPlagiarismPdfModeChange() {
+  const mode = document.getElementById('plag-pdf-extract-mode')?.value || 'body_no_ref';
+  const rangeWrap = document.getElementById('plag-pdf-range-wrap');
+  const sectionWrap = document.getElementById('plag-pdf-section-wrap');
+
+  if (rangeWrap) rangeWrap.classList.toggle('hidden', mode !== 'page_range');
+  if (sectionWrap) sectionWrap.classList.toggle('hidden', mode !== 'section');
+
+  applyPlagiarismPdfSelection(false);
+}
+
+function applyPlagiarismPdfSelection(runAuditNow = false) {
+  if (!lastParsedPdfData) return;
+  const { doc, meta } = lastParsedPdfData;
+  const mode = document.getElementById('plag-pdf-extract-mode')?.value || 'body_no_ref';
+  const plagInput = document.getElementById('plagiarism-input');
+  if (!plagInput) return;
+
+  let extractedText = '';
+  let sourceDesc = '';
+
+  if (mode === 'body_no_ref') {
+    extractedText = meta.bodyWithoutReferences || doc.content || '';
+    sourceDesc = 'Naskah Utama PDF (Tanpa Daftar Pustaka)';
+  } else if (mode === 'full_pdf') {
+    extractedText = doc.content || '';
+    sourceDesc = `Seluruh Halaman PDF (1–${meta.pageCount || 1})`;
+  } else if (mode === 'page_range') {
+    const startPage = Math.max(1, parseInt(document.getElementById('plag-pdf-page-start')?.value || '1', 10));
+    const endPage = Math.max(startPage, parseInt(document.getElementById('plag-pdf-page-end')?.value || String(meta.pageCount || 1), 10));
+    const pages = Array.isArray(meta.pages) ? meta.pages : [];
+    const selectedPages = pages.filter(p => p.pageNumber >= startPage && p.pageNumber <= endPage);
+    extractedText = selectedPages.map(p => p.text).join('\n\n').trim() || doc.content || '';
+    sourceDesc = `Halaman ${startPage}–${endPage} dari File PDF Asli`;
+  } else if (mode === 'section') {
+    const val = document.getElementById('plag-pdf-section-select')?.value || '';
+    if (val.startsWith('sec:')) {
+      const idx = parseInt(val.split(':')[1], 10);
+      const sec = meta.detectedSections?.[idx];
+      if (sec) {
+        extractedText = sec.content;
+        sourceDesc = `Bagian "${sec.title}" dari File PDF Asli`;
+      }
+    } else if (val.startsWith('page:')) {
+      const pageNum = parseInt(val.split(':')[1], 10);
+      const pg = (meta.pages || []).find(p => p.pageNumber === pageNum);
+      if (pg) {
+        extractedText = pg.text;
+        sourceDesc = `Halaman ${pageNum} dari File PDF Asli`;
+      }
+    }
+    if (!extractedText) {
+      extractedText = meta.bodyWithoutReferences || doc.content || '';
+      sourceDesc = 'Teks File PDF Asli';
+    }
+  }
+
+  plagInput.value = extractedText.slice(0, 15000);
+  const wordCount = extractedText.split(/\s+/).filter(Boolean).length;
+  const statusEl = document.getElementById('plagiarism-status');
+  if (statusEl) {
+    statusEl.textContent = `📄 Sumber: ${sourceDesc} (${wordCount.toLocaleString('id-ID')} kata)`;
+  }
+
+  if (runAuditNow && extractedText.trim().length >= 20) {
+    checkPlagiarism();
+  }
+}
+
+function populateParaphrasePdfInspector(doc, meta) {
+  const inspector = document.getElementById('para-pdf-inspector');
+  const fileNameEl = document.getElementById('para-pdf-filename');
+  const metaBadgeEl = document.getElementById('para-pdf-meta-badge');
+  const selectEl = document.getElementById('para-pdf-section-select');
+
+  if (!inspector) return;
+  inspector.classList.remove('hidden');
+
+  if (fileNameEl) fileNameEl.textContent = meta.fileName || doc.title || 'dokumen.pdf';
+  if (metaBadgeEl) metaBadgeEl.textContent = `(${meta.pageCount || 1} Hal · ${(meta.wordCount || 0).toLocaleString('id-ID')} Kata)`;
+
+  if (selectEl) {
+    let html = `<option value="body_no_ref">📄 Naskah Utama (Tanpa Daftar Pustaka)</option>`;
+    html += `<option value="full_pdf">📚 Seluruh Halaman Utuh</option>`;
+    const sections = Array.isArray(meta.detectedSections) ? meta.detectedSections : [];
+    if (sections.length > 0) {
+      html += `<optgroup label="📑 Pilih Bab dari PDF Asli">`;
+      sections.forEach((s, idx) => {
+        html += `<option value="sec:${idx}">${escapeHtml(s.title)} (${s.wordCount} kata)</option>`;
+      });
+      html += `</optgroup>`;
+    }
+    const pages = Array.isArray(meta.pages) ? meta.pages : [];
+    if (pages.length > 0) {
+      html += `<optgroup label="📄 Pilih Halaman PDF Asli">`;
+      pages.forEach(p => {
+        html += `<option value="page:${p.pageNumber}">Halaman ${p.pageNumber} (${p.wordCount} kata)</option>`;
+      });
+      html += `</optgroup>`;
+    }
+    selectEl.innerHTML = html;
+  }
+}
+
+function applyParaphrasePdfSelection() {
+  if (!lastParsedPdfData) return;
+  const { doc, meta } = lastParsedPdfData;
+  const val = document.getElementById('para-pdf-section-select')?.value || 'body_no_ref';
+  const paraInput = document.getElementById('para-input');
+  if (!paraInput) return;
+
+  let text = '';
+  if (val === 'body_no_ref') {
+    text = meta.bodyWithoutReferences || doc.content || '';
+  } else if (val === 'full_pdf') {
+    text = doc.content || '';
+  } else if (val.startsWith('sec:')) {
+    const idx = parseInt(val.split(':')[1], 10);
+    text = meta.detectedSections?.[idx]?.content || '';
+  } else if (val.startsWith('page:')) {
+    const pageNum = parseInt(val.split(':')[1], 10);
+    text = (meta.pages || []).find(p => p.pageNumber === pageNum)?.text || '';
+  }
+
+  paraInput.value = (text || doc.content || '').slice(0, 15000);
+  paraInput.focus();
 }
 
 // ── Plagiarism & Turnitin Similarity Checker (Academic Standard) ────

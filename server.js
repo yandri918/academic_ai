@@ -185,6 +185,122 @@ app.delete('/api/memory/:sessionId', (req, res) => {
   res.json({ success: true, remainingCount: 0 });
 });
 
+// ── Academic PDF Parser Engine (Page-by-Page & Section Extractor) ────────
+function cleanAcademicPdfPageText(rawPageText = '') {
+  if (!rawPageText) return '';
+  let text = String(rawPageText)
+    .replace(/\r\n/g, '\n')
+    .replace(/\uFB00/g, 'ff')
+    .replace(/\uFB01/g, 'fi')
+    .replace(/\uFB02/g, 'fl')
+    .replace(/\uFB03/g, 'ffi')
+    .replace(/\uFB04/g, 'ffl')
+    .replace(/\u00A0/g, ' ');
+
+  // Remove standalone page number markers at top/bottom of page
+  const lines = text.split('\n').filter((line, idx, arr) => {
+    const t = line.trim();
+    if (!t) return true;
+    if (/^--\s*\d+\s+of\s+\d+\s*--$/i.test(t)) return false;
+    if ((idx === 0 || idx === arr.length - 1) && /^\d{1,4}$/.test(t)) return false;
+    if ((idx === 0 || idx === arr.length - 1) && /^halaman\s+\d+$/i.test(t)) return false;
+    return true;
+  });
+
+  text = lines.join('\n');
+
+  // Re-join hyphenated words split across PDF lines (e.g. "pembela-\njaran" -> "pembelajaran")
+  text = text.replace(/([a-zA-Z]{2,})-\n\s*([a-z]{2,})/g, '$1$2');
+
+  // Merge single line wraps inside paragraphs while preserving headings and paragraph breaks
+  text = text.replace(/([a-z0-9,;:\)\]])\n([a-z\(])/g, '$1 $2');
+
+  // Collapse excessive whitespace
+  text = text.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  return text;
+}
+
+function detectAcademicSectionsFromPdf(fullText = '') {
+  const sections = [];
+  if (!fullText) return sections;
+
+  const headingRegex = /(?:^|\n)\s*((?:BAB\s+[I1VXLCDM]+(?:\s*[:.\-–]?\s*[^\n]{0,60})?)|(?:ABSTRAK|ABSTRACT|PENDAHULUAN|INTRODUCTION|TINJAUAN PUSTAKA|KAJIAN PUSTAKA|LITERATURE REVIEW|METODE(?:\s+PENELITIAN)?|METHOD(?:OLOGY|S)?|HASIL(?:\s+DAN\s+PEMBAHASAN)?|RESULTS?(?:\s+AND\s+DISCUSSION)?|PEMBAHASAN|DISCUSSION|KESIMPULAN|SIMPULAN|CONCLUSION|DAFTAR PUSTAKA|REFERENCES|BIBLIOGRAPHY))\s*(?:\n|$)/gi;
+
+  const matches = [];
+  let m;
+  while ((m = headingRegex.exec(fullText)) !== null) {
+    matches.push({
+      title: m[1].replace(/\s+/g, ' ').trim(),
+      index: m.index
+    });
+  }
+
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index;
+    const end = i + 1 < matches.length ? matches[i + 1].index : fullText.length;
+    const content = fullText.slice(start, end).trim();
+    const wordCount = content.split(/\s+/).filter(Boolean).length;
+    if (wordCount >= 15) {
+      sections.push({
+        id: `sec_${i + 1}`,
+        title: matches[i].title,
+        wordCount,
+        content
+      });
+    }
+  }
+  return sections;
+}
+
+async function extractStructuredAcademicPdf(buffer, originalFileName = 'document.pdf') {
+  const parser = new PDFParse({ data: buffer });
+  const textResult = await parser.getText();
+  const info = await parser.getInfo().catch(() => ({}));
+
+  const rawPages = Array.isArray(textResult.pages) && textResult.pages.length > 0
+    ? textResult.pages
+    : [{ num: 1, text: textResult.text || '' }];
+
+  const pages = rawPages.map((p, idx) => {
+    const cleaned = cleanAcademicPdfPageText(p.text || '');
+    const wc = cleaned.split(/\s+/).filter(Boolean).length;
+    return {
+      pageNumber: p.num || (idx + 1),
+      wordCount: wc,
+      text: cleaned
+    };
+  });
+
+  const cleanFullText = pages
+    .map(p => p.text)
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+
+  // Separate Body Without References (strip DAFTAR PUSTAKA / REFERENCES at the end)
+  const bibMatch = cleanFullText.match(/\n\s*(DAFTAR PUSTAKA|REFERENCES|BIBLIOGRAPHY|SENARAI RUJUKAN)\s*\n/i);
+  const bodyWithoutReferences = (bibMatch && bibMatch.index > cleanFullText.length * 0.35)
+    ? cleanFullText.slice(0, bibMatch.index).trim()
+    : cleanFullText;
+
+  const detectedSections = detectAcademicSectionsFromPdf(cleanFullText);
+  const pageCount = textResult.total || pages.length || 1;
+  const wordCount = cleanFullText.split(/\s+/).filter(Boolean).length;
+  const bodyWordCount = bodyWithoutReferences.split(/\s+/).filter(Boolean).length;
+
+  return {
+    fileName: originalFileName,
+    pageCount,
+    wordCount,
+    bodyWordCount,
+    cleanText: cleanFullText,
+    bodyWithoutReferences,
+    pages,
+    detectedSections,
+    pdfInfo: info?.info || {}
+  };
+}
+
 // ── PDF Parsing & Ingestion API Endpoints ────────
 app.post('/api/pdf/upload', upload.single('pdf'), async (req, res) => {
   try {
@@ -194,32 +310,25 @@ app.post('/api/pdf/upload', upload.single('pdf'), async (req, res) => {
     const sessionId = req.body.sessionId || 'default_session';
     const customTitle = req.body.title || req.file.originalname.replace(/\.pdf$/i, '');
 
-    console.log(`[AcademAI PDF] Menerima unggahan file "${req.file.originalname}" (${(req.file.size / 1024).toFixed(1)} KB)...`);
+    console.log(`[AcademAI PDF Parser] Menerima unggahan file asli "${req.file.originalname}" (${(req.file.size / 1024).toFixed(1)} KB)...`);
 
-    const parser = new PDFParse({ data: req.file.buffer });
-    const textResult = await parser.getText();
-    const info = await parser.getInfo();
+    const parsed = await extractStructuredAcademicPdf(req.file.buffer, req.file.originalname);
 
-    const rawText = textResult.text || '';
-    const cleanText = rawText.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-    const pageCount = textResult.total || 1;
-    const wordCount = cleanText.split(/\s+/).filter(Boolean).length;
-
-    if (wordCount < 10) {
+    if (parsed.wordCount < 10) {
       return res.status(400).json({
         success: false,
-        error: 'Teks tidak dapat diekstrak dari PDF ini (kemungkinan berupa scan gambar / PDF terenkripsi).'
+        error: 'Teks tidak dapat diekstrak dari PDF ini (kemungkinan berupa scan gambar tanpa OCR / PDF terenkripsi).'
       });
     }
 
-    // Otomatis masukkan ke Memori Dokumen Riset
+    // Simpan ke Memori Dokumen Riset
     const savedDoc = saveDocumentToMemory(sessionId, {
       title: `PDF: ${customTitle}`,
       type: 'pdf_upload',
-      content: cleanText
+      content: parsed.cleanText
     });
 
-    console.log(`[AcademAI PDF] ✅ Berhasil mengekstrak ${pageCount} halaman, ${wordCount} kata. Tersimpan ke memori (${savedDoc.id})`);
+    console.log(`[AcademAI PDF Parser] ✅ Berhasil mengekstrak ${parsed.pageCount} halaman, ${parsed.wordCount} kata (${parsed.detectedSections.length} bagian terdeteksi). Tersimpan ke memori (${savedDoc.id})`);
 
     res.json({
       success: true,
@@ -228,9 +337,13 @@ app.post('/api/pdf/upload', upload.single('pdf'), async (req, res) => {
       meta: {
         fileName: req.file.originalname,
         fileSize: req.file.size,
-        pageCount,
-        wordCount,
-        pdfInfo: info?.info || {}
+        pageCount: parsed.pageCount,
+        wordCount: parsed.wordCount,
+        bodyWordCount: parsed.bodyWordCount,
+        bodyWithoutReferences: parsed.bodyWithoutReferences,
+        pages: parsed.pages,
+        detectedSections: parsed.detectedSections,
+        pdfInfo: parsed.pdfInfo
       }
     });
   } catch (err) {

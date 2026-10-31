@@ -28,7 +28,7 @@
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" defer></script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="style.css?v=20261031" />
+  <link rel="stylesheet" href="style.css?v=20261031b" />
 </head>
 <body>
 
@@ -472,9 +472,80 @@
             </div>
           </div>
 
+          <!-- Dedicated Academic PDF Parser Dropzone & Direct File Inspector -->
+          <div style="margin-bottom:16px;">
+            <div
+              class="pdf-upload-box"
+              id="plag-pdf-dropzone"
+              onclick="triggerPlagiarismPdfUpload()"
+              ondragover="handlePdfDragOver(event, 'plag-pdf-dropzone')"
+              ondragleave="handlePdfDragLeave(event, 'plag-pdf-dropzone')"
+              ondrop="handlePdfDrop(event, 'plagiarism')"
+              style="margin-bottom:10px;border:1.5px dashed rgba(99,102,241,0.45);background:rgba(99,102,241,0.06);"
+              title="Klik atau seret file PDF asli untuk diekstrak dan dicek plagiarisme secara langsung"
+            >
+              <span class="pdf-upload-icon">📄</span>
+              <div class="pdf-upload-info">
+                <span class="pdf-upload-title">Academic PDF Parser — Upload File PDF Asli (.pdf) untuk Cek Plagiat Langsung</span>
+                <span class="pdf-upload-sub">Seret &amp; lepas file PDF skripsi/tesis/jurnal Anda ke sini atau klik untuk memilih (maks. 35MB). Mengekstrak teks <strong>100% asli dari file PDF</strong> per halaman &amp; bab (bukan generate ke Chat).</span>
+              </div>
+              <button class="btn btn-primary btn-xs" type="button" onclick="event.stopPropagation(); triggerPlagiarismPdfUpload();">📂 Pilih File PDF</button>
+            </div>
+
+            <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:8px;padding:0 4px;">
+              <label class="flex items-center gap-2 text-sm" style="color:var(--t-secondary);cursor:pointer;">
+                <input type="checkbox" id="plag-pdf-autocheck" checked style="accent-color:var(--c-accent);width:15px;height:15px;" />
+                <span>⚡ Otomatis langsung jalankan <strong>Audit Plagiarisme</strong> saat file PDF selesai diekstrak</span>
+              </label>
+              <span class="text-xs text-muted" id="plag-pdf-parse-status">Belum ada file PDF dipilih</span>
+            </div>
+
+            <!-- Panel Inspector File PDF Asli (Muncul setelah PDF diunggah) -->
+            <div id="plag-pdf-inspector" class="hidden" style="margin-top:10px;padding:14px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-sm);">
+              <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:8px;">
+                <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+                  <span class="chip chip-success">✅ File PDF Asli Terdeteksi</span>
+                  <strong id="plag-pdf-filename" style="font-size:0.9rem;color:var(--t-primary);">dokumen.pdf</strong>
+                  <span id="plag-pdf-meta-badge" class="text-xs text-muted">(0 Hal · 0 Kata)</span>
+                </div>
+                <button class="btn btn-accent btn-xs" type="button" onclick="applyPlagiarismPdfSelection(true)">🔍 Audit Bagian PDF Ini Sekarang</button>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;align-items:end;margin-top:8px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="plag-pdf-extract-mode" style="font-size:0.76rem;">Bagian File PDF Asli yang Dicek</label>
+                  <select id="plag-pdf-extract-mode" class="form-select" onchange="onPlagiarismPdfModeChange()" style="font-size:0.82rem;padding:6px 10px;">
+                    <option value="body_no_ref" selected>📄 Naskah Utama Saja (Otomatis Buang Daftar Pustaka)</option>
+                    <option value="full_pdf">📚 Seluruh Halaman PDF Utuh (Hal. 1 s/d Akhir)</option>
+                    <option value="page_range">🔢 Pilih Rentang Halaman Tertentu (Hal. X s/d Y)</option>
+                    <option value="section">📑 Pilih Bab / Bagian Spesifik dari PDF</option>
+                  </select>
+                </div>
+
+                <!-- Opsi Rentang Halaman -->
+                <div id="plag-pdf-range-wrap" class="hidden" style="display:flex;align-items:center;gap:6px;">
+                  <div class="form-group" style="margin-bottom:0;flex:1;">
+                    <label class="form-label" style="font-size:0.74rem;">Dari Hal.</label>
+                    <input type="number" id="plag-pdf-page-start" class="form-input" min="1" value="1" onchange="applyPlagiarismPdfSelection(false)" style="padding:6px 8px;font-size:0.82rem;" />
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;flex:1;">
+                    <label class="form-label" style="font-size:0.74rem;">Sampai Hal.</label>
+                    <input type="number" id="plag-pdf-page-end" class="form-input" min="1" value="1" onchange="applyPlagiarismPdfSelection(false)" style="padding:6px 8px;font-size:0.82rem;" />
+                  </div>
+                </div>
+
+                <!-- Opsi Pilih Bab Spesifik -->
+                <div id="plag-pdf-section-wrap" class="hidden" style="grid-column:span 2;">
+                  <label class="form-label" style="font-size:0.74rem;">Pilih Bab / Bagian dari PDF Asli</label>
+                  <select id="plag-pdf-section-select" class="form-select" onchange="applyPlagiarismPdfSelection(false)" style="font-size:0.82rem;padding:6px 10px;"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group" style="margin-bottom:16px;">
             <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:8px;">
-              <label class="form-label" for="plagiarism-input" data-i18n="plag.input_label" style="margin-bottom:0;">Naskah Akademik yang Akan Diaudit</label>
+              <label class="form-label" for="plagiarism-input" data-i18n="plag.input_label" style="margin-bottom:0;">Teks Naskah Asli (Hasil Ekstraksi PDF / Input Langsung)</label>
               <div class="flex items-center gap-2" style="flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-xs" onclick="loadSamplePlagiarismText()" title="Muat contoh paragraf skripsi untuk uji coba">
                   🎲 Contoh Naskah Uji
@@ -483,7 +554,7 @@
                   🧠 Muat dari Memori
                 </button>
                 <button class="btn btn-ghost btn-xs" onclick="triggerPlagiarismPdfUpload()" title="Upload file PDF untuk cek plagiat" data-i18n="plag.btn_upload_pdf">
-                  📄 Upload PDF
+                  📄 Ganti File PDF
                 </button>
               </div>
             </div>
@@ -662,9 +733,43 @@
             </div>
           </div>
 
+          <!-- Dedicated Academic PDF Parser Dropzone for Paraphraser -->
+          <div style="margin-bottom:14px;">
+            <div
+              class="pdf-upload-box"
+              id="para-pdf-dropzone"
+              onclick="triggerParaphrasePdfUpload()"
+              ondragover="handlePdfDragOver(event, 'para-pdf-dropzone')"
+              ondragleave="handlePdfDragLeave(event, 'para-pdf-dropzone')"
+              ondrop="handlePdfDrop(event, 'paraphrase')"
+              style="margin-bottom:8px;border:1.5px dashed rgba(6,182,212,0.45);background:rgba(6,182,212,0.06);"
+              title="Klik atau seret file PDF asli untuk diekstrak dan diparafrase langsung"
+            >
+              <span class="pdf-upload-icon">📄</span>
+              <div class="pdf-upload-info">
+                <span class="pdf-upload-title">Academic PDF Parser — Upload File PDF Asli (.pdf) untuk Parafrase &amp; Anti-AI</span>
+                <span class="pdf-upload-sub">Seret atau pilih file PDF artikel/skripsi Anda. Mengekstrak teks asli langsung ke kotak parafrase (tanpa masuk ke Chat).</span>
+              </div>
+              <button class="btn btn-accent btn-xs" type="button" onclick="event.stopPropagation(); triggerParaphrasePdfUpload();">📂 Pilih File PDF</button>
+            </div>
+            <div id="para-pdf-inspector" class="hidden" style="padding:10px 14px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.3);border-radius:var(--radius-sm);font-size:0.82rem;">
+              <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:8px;">
+                <div>
+                  <span class="chip chip-accent">📄 PDF Asli</span>
+                  <strong id="para-pdf-filename" style="margin-left:6px;">dokumen.pdf</strong>
+                  <span id="para-pdf-meta-badge" class="text-xs text-muted" style="margin-left:6px;"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label class="text-xs text-muted">Pilih Halaman/Bab:</label>
+                  <select id="para-pdf-section-select" class="form-select" onchange="applyParaphrasePdfSelection()" style="font-size:0.78rem;padding:4px 8px;min-width:210px;"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group" style="margin-bottom:14px;">
             <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:8px;">
-              <label class="form-label" for="para-input" style="margin-bottom:0;">Teks Akademik yang Akan Diparafrase &amp; Di-Humanize</label>
+              <label class="form-label" for="para-input" style="margin-bottom:0;">Teks Naskah Asli yang Akan Diparafrase &amp; Di-Humanize</label>
               <div class="flex items-center gap-2" style="flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-xs" onclick="loadSampleAiTextForParaphrase()" title="Contoh teks buatan AI untuk diuji">
                   🎲 Contoh Teks AI
@@ -673,7 +778,7 @@
                   🧠 Muat dari Memori
                 </button>
                 <button class="btn btn-ghost btn-xs" onclick="triggerParaphrasePdfUpload()" title="Upload file PDF">
-                  📄 Upload PDF
+                  📄 Ganti File PDF
                 </button>
               </div>
             </div>
@@ -892,11 +997,11 @@
     </p>
     
     <!-- PDF Upload Dropzone inside Modal -->
-    <div class="pdf-upload-box" onclick="triggerPdfUpload()" title="Klik untuk mengunggah PDF">
+    <div class="pdf-upload-box" onclick="triggerPdfUpload('memory')" title="Klik untuk mengunggah PDF">
       <span class="pdf-upload-icon">📄</span>
       <div class="pdf-upload-info">
-        <span class="pdf-upload-title" data-i18n="mem.upload_title">Unggah Jurnal / Dokumen PDF</span>
-        <span class="pdf-upload-sub" data-i18n="mem.upload_sub">Pilih file PDF (maks. 35MB). Teks diekstrak dan otomatis tersimpan ke Memori Konteks.</span>
+        <span class="pdf-upload-title" data-i18n="mem.upload_title">Unggah Jurnal / Dokumen PDF Asli</span>
+        <span class="pdf-upload-sub" data-i18n="mem.upload_sub">Pilih file PDF (maks. 35MB). Teks asli diekstrak untuk Cek Plagiat, Parafrase, atau Konteks Riset (tidak otomatis di-generate ke Chat).</span>
       </div>
       <button class="btn btn-secondary btn-xs" type="button" data-i18n="mem.btn_select_pdf">Pilih PDF</button>
     </div>
@@ -919,13 +1024,13 @@
 </div>
 
 <!-- Internationalization (i18n) Engine -->
-<script src="i18n.js?v=20261031"></script>
+<script src="i18n.js?v=20261031b"></script>
 
 <!-- User Config (Railway URL, etc.) — Edit config.js -->
-<script src="config.js?v=20261031"></script>
+<script src="config.js?v=20261031b"></script>
 
 <!-- Main Script -->
-<script src="app.js?v=20261031"></script>
+<script src="app.js?v=20261031b"></script>
 
 </body>
 </html>
